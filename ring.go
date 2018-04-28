@@ -36,11 +36,11 @@ func (r *ring) Open() bool {
 
 type commit struct {
 	ring
-	log []int32
+	log []int64
 	_ [4]int64
 }
 
 func (c *commit) Init(size uint) {
 	c.ring.Init(size)
-	c.log = make([]int32, len(c.data))
+	c.log = make([]int64, len(c.data))
 }

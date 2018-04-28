@@ -27,7 +27,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 		var i = 0
 		for p := rp; p < wp; p++ {
 			var pos = p & r.mask
-			for atomic.LoadInt32(&r.log[pos]) == 0 {
+			for atomic.LoadInt64(&r.log[pos]) == 0 {
 				runtime.Gosched()
 			}
 			fn(r.data[pos])
@@ -48,5 +48,5 @@ func (r *MPSC) Put(i int64) {
 		runtime.Gosched()
 	}
 	r.data[pos] = i
-	atomic.StoreInt32(&r.log[pos], 1)
+	atomic.StoreInt64(&r.log[pos], wp+1)
 }
