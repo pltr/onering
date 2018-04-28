@@ -13,14 +13,17 @@ type SPSC struct {
 	_ [5]int64
 }
 
-func (r *SPSC) Get() (i int64) {
+func (r *SPSC) Get(i *int64) bool {
 	var rp = r.rp
 	for rp >= atomic.LoadInt64(&r.wp) {
+		if atomic.LoadInt32(&r.done) > 0 {
+			return false
+		}
 		runtime.Gosched()
 	}
-	i = r.data[rp&r.mask]
+	*i = r.data[rp&r.mask]
 	atomic.AddInt64(&r.rp, 1)
-	return
+	return true
 }
 
 func (r *SPSC) Consume(fn func(int64)) {
