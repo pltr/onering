@@ -186,3 +186,48 @@ func BenchmarkChanMPSC(b *testing.B) {
 		})
 	}
 }
+
+// courtesy or Egon Elbre
+func TestXOneringSPMC(t *testing.T) {
+	const P = 4
+	const N = 100
+	var q SPMC
+	q.Init(4)
+
+	var wg sync.WaitGroup
+	wg.Add(P + 1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < N*P; i++ {
+			q.Put(int64(i + 1))
+		}
+	}()
+
+	errs := make(chan error)
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	for i := 0; i < P; i++ {
+		go func(p int) {
+			defer wg.Done()
+			var lastSeen int64
+			for i := 0; i < N; i++ {
+				var v int64
+				if !q.Get(&v) {
+					errs <- fmt.Errorf("failed get")
+				}
+				//fmt.Println(p, v)
+				if v <= lastSeen {
+					errs <- fmt.Errorf("got %v last seen %v on producer %v", v, lastSeen, p)
+				}
+				lastSeen = v
+			}
+		}(i)
+	}
+
+	for err := range errs {
+		t.Fatal(err)
+	}
+}

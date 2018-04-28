@@ -14,7 +14,7 @@ func (r *SPMC) Get(i *int64) bool {
 		rp = atomic.AddInt64(&r.rp, 1) - 1
 		pos = rp & r.mask
 	)
-	for atomic.LoadInt32(&r.log[pos]) == 0 {
+	for atomic.LoadInt32(&r.log[pos]) != int32(rp+1) {
 		if atomic.LoadInt32(&r.done) > 0 {
 			return false
 		}
@@ -27,12 +27,13 @@ func (r *SPMC) Get(i *int64) bool {
 
 
 func (r *SPMC) Put(i int64) {
-	var pos = r.wp & r.mask
+	var wp = r.wp
+	var pos = wp & r.mask
 	for atomic.LoadInt32(&r.log[pos]) != 0 {
 		runtime.Gosched()
 	}
 	r.data[pos] = i
 	r.wp++
-	atomic.StoreInt32(&r.log[pos], 1)
+	atomic.StoreInt32(&r.log[pos], int32(r.wp))
 }
 
