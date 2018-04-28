@@ -30,24 +30,24 @@ func (r *SPSC) Consume(fn func(int64)) {
 	for {
 		var (
 			rp  = r.rp
-			end int64
+			wp int64
 		)
 		for {
-			if end = atomic.LoadInt64(&r.wp); end > rp {
+			if wp = atomic.LoadInt64(&r.wp); wp > rp {
 				break
 			} else if atomic.LoadInt32(&r.done) > 0 {
 				return
 			}
 			runtime.Gosched()
 		}
-		if end-rp > MaxBatch {
-			end = rp + MaxBatch
-		}
-
-		for p := rp; p < end; p++ {
+		var i = 0
+		for p := rp; p < wp; p++ {
 			fn(r.data[p & r.mask])
+			if i++; i & MaxBatch == 0 {
+				atomic.StoreInt64(&r.rp, p)
+			}
 		}
-		atomic.StoreInt64(&r.rp, end)
+		atomic.StoreInt64(&r.rp, wp)
 	}
 }
 

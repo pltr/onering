@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 )
 
-const MaxBatch = 256
+const MaxBatch = 255
 
 type ring struct {
 	wp      int64
