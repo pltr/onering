@@ -15,7 +15,7 @@ type SPSC struct {
 
 func (r *SPSC) Get() (i int64) {
 	var rp = r.rp
-	for j := 0; rp >= atomic.LoadInt64(&r.wp); j++ {
+	for rp >= atomic.LoadInt64(&r.wp) {
 		runtime.Gosched()
 	}
 	i = r.data[rp&r.mask]
@@ -56,5 +56,3 @@ func (r *SPSC) Put(i int64) {
 	r.data[wp&r.mask] = i
 	atomic.AddInt64(&r.wp, 1)
 }
-
-var spin = 1024 * 16 -1

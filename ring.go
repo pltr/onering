@@ -25,11 +25,14 @@ func (r *ring) Init(size uint) {
 }
 
 
-func (r *ring) Stop() {
+func (r *ring) Close() {
 	atomic.StoreInt32(&r.done, 1)
 }
 
 
+func (r *ring) Open() bool {
+	return atomic.LoadInt32(&r.done) == 0 || atomic.LoadInt64(&r.wp) - atomic.LoadInt64(&r.rp) > 0
+}
 
 type commit struct {
 	ring

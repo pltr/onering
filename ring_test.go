@@ -111,7 +111,7 @@ func BenchmarkSPSC_Batch(b *testing.B) {
 		ring.Consume(func(i int64) {
 			n--
 			if n <= 0 {
-				ring.Stop()
+				ring.Close()
 			}
 		})
 		wg.Done()
@@ -121,14 +121,11 @@ func BenchmarkSPSC_Batch(b *testing.B) {
 }
 
 
-
-
-
-func BenchmarkRing_SPMC(b *testing.B) {
+func BenchmarkSPMC(b *testing.B) {
 	var ring SPMC
 	ring.Init(8192)
 	var wg sync.WaitGroup
-	var readers = 256
+	var readers = 64
 	wg.Add(readers+1)
 	pp := runtime.GOMAXPROCS(8)
 	for c := 0; c < readers; c++ {
@@ -178,7 +175,7 @@ func BenchmarkMPSC_Batch(b *testing.B) {
 		ring.Consume(func(i int64) {
 			n--
 			if n <= 0 {
-				ring.Stop()
+				ring.Close()
 			}
 		})
 		wg.Done()

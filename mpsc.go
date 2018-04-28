@@ -6,7 +6,6 @@ import (
 )
 
 
-
 type MPSC struct {
 	commit
 }
