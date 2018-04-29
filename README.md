@@ -4,9 +4,10 @@ Well, no. It's not really one ring, but it is a collection of lock free rings fo
 
 Microbenchmarks are *everything*
 
-    BenchmarkSPSC_Get-8     	100000000	        59.0 ns/op
-    BenchmarkSPSC_Batch-8   	300000000	        12.8 ns/op
-    BenchmarkSPMC-8         	100000000	        50.1 ns/op
-    BenchmarkMPSC_Batch-8   	100000000	        32.5 ns/op
-    BenchmarkChanSPSC-8     	100000000	        55.1 ns/op
-    BenchmarkChanMPSC-8        	10000000	        342 ns/op
+    BenchmarkSPSC_Get-8     	20000000	        59.9 ns/op
+    BenchmarkSPSC_Batch-8   	100000000	        12.7 ns/op
+    BenchmarkSPMC-8         	30000000	        41.4 ns/op
+    BenchmarkMPSC_Get-8     	30000000	        60.2 ns/op
+    BenchmarkMPSC_Batch-8   	50000000	        35.4 ns/op
+    BenchmarkChanSPSC-8     	30000000	        54.8 ns/op
+    BenchmarkChanMPSC/MPSC-64-8         	 3000000	       436 ns/op
