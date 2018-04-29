@@ -30,7 +30,7 @@ func (r *ring) Close() {
 }
 
 
-func (r *ring) Open() bool {
+func (r *ring) Opened() bool {
 	return atomic.LoadInt32(&r.done) == 0 || atomic.LoadInt64(&r.wp) - atomic.LoadInt64(&r.rp) > 0
 }
 

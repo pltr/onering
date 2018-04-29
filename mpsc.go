@@ -13,7 +13,7 @@ func (r *MPSC) Get(i *int64) bool {
 	var rp = r.rp
 	var pos = rp & r.mask
 	for rp >= atomic.LoadInt64(&r.log[pos]) {
-		if !r.Open() {
+		if !r.Opened() {
 			return false
 		}
 		runtime.Gosched()
