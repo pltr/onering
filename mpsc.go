@@ -33,6 +33,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 	store := func(p int64) {
 		if p > lastStored {
 			atomic.StoreInt64(&r.rp, p)
+			lastStored = p
 		}
 	}
 	for {
