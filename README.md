@@ -1,6 +1,8 @@
 ## One ring to queue them all
 
-Well, no. It's not really one ring, but it is a collection of lock free rings for different scenarios
+Well, no. It's not really just one ring, but a collection of lock free ring buffers for different scenarios, so it's even better.
+These rings don't use CAS operations to make them suitable for low latency environments, as a side effect of that,
+they observe total order of messages.
 
 Microbenchmarks are *everything*
 
