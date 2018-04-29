@@ -287,3 +287,36 @@ func TestXOneringSPMC(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestXOneringMPSCBatch(t *testing.T) {
+	var q MPSC
+	q.Init(2)
+	const P = 4
+	const C = 2
+	var wg sync.WaitGroup
+	wg.Add(P+1)
+	for id := 0; id < P; id++ {
+		go func(id int) {
+			defer wg.Done()
+			for i := 0; i < C; i++ {
+				q.Put(int64(id<<32 | i))
+			}
+		}(id)
+	}
+
+	go func() {
+		defer wg.Done()
+		total := C * P
+		q.Consume(func(val int64) {
+			total--
+			if total == 0 {
+				q.Close()
+			} else if total < 0 {
+				t.Fatal("invalid value")
+				q.Close()
+				return
+			}
+		})
+	}()
+	wg.Wait()
+}

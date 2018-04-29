@@ -27,7 +27,14 @@ func (r *MPSC) Get(i *int64) bool {
 	return true
 }
 
+
 func (r *MPSC) Consume(fn func(int64)) {
+	var lastStored int64
+	store := func(p int64) {
+		if p > lastStored {
+			atomic.StoreInt64(&r.rp, p)
+		}
+	}
 	for {
 		var (
 			rp = r.rp
@@ -48,15 +55,16 @@ func (r *MPSC) Consume(fn func(int64)) {
 				seq = &r.seq[pos]
 			)
 			for atomic.LoadInt64(seq) == 0 {
+				store(p)
 				runtime.Gosched()
 			}
 			fn(r.data[pos])
 			*seq = 0
 			if i++; i&MaxBatch == 0 {
-				atomic.StoreInt64(&r.rp, p)
+				store(p)
 			}
 		}
-		atomic.StoreInt64(&r.rp, wp)
+		store(wp)
 	}
 }
 
