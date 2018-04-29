@@ -7,13 +7,15 @@ they observe total order of messages. As a reward for finding flaws/bugs in this
 Microbenchmarks are *everything*, the most important thing in the universe.
 
 Rings:
+
     BenchmarkRingSPSC_Get-8     	100000000	        59.2 ns/op
     BenchmarkRingSPSC_Batch-8   	300000000	        12.7 ns/op
     BenchmarkRingSPMC-8         	100000000	        41.0 ns/op
     BenchmarkRingMPSC_Get-8     	100000000	        59.7 ns/op
     BenchmarkRingMPSC_Batch-8   	100000000	        33.0 ns/op
 
-Go channels
+Go channels:
+
     BenchmarkChanSPSC-8         	100000000	        54.8 ns/op
     BenchmarkChanMPSC/MPSC-64-8 	20000000	       333 ns/op
 
