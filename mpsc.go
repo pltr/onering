@@ -9,6 +9,20 @@ import (
 type MPSC struct {
 	commit
 }
+func (r *MPSC) Get(i *int64) bool {
+	var rp = r.rp
+	var pos = rp & r.mask
+	for rp >= atomic.LoadInt64(&r.wp) {
+		if atomic.LoadInt32(&r.done) > 0 {
+			return false
+		}
+		runtime.Gosched()
+	}
+	*i = r.data[pos]
+	r.log[pos] = 0
+	atomic.AddInt64(&r.rp, 1)
+	return true
+}
 
 func (r *MPSC) Consume(fn func(int64)) {
 	for {

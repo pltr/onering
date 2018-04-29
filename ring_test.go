@@ -97,6 +97,39 @@ func BenchmarkSPMC(b *testing.B) {
 	runtime.GOMAXPROCS(pp)
 }
 
+func BenchmarkMPSC_Get(b *testing.B) {
+	var ring MPSC
+	ring.Init(8192)
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 64
+	wg.Add(producers+1)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			var total = b.N / producers + 1
+			var start = p * total
+			var end = start + total
+			for i := start; i < end; i++ {
+				ring.Put(int64(i))
+			}
+			wg.Done()
+		}(p)
+	}
+	go func(n int) {
+		runtime.LockOSThread()
+		var v int64
+		for ring.Get(&v) {
+			n--
+			if n <= 0 {
+				ring.Close()
+			}
+		}
+		wg.Done()
+	}(b.N)
+
+	wg.Wait()
+	//runtime.GOMAXPROCS(pp)
+}
 
 func BenchmarkMPSC_Batch(b *testing.B) {
 	var ring MPSC
