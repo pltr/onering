@@ -10,16 +10,19 @@ type MPSC struct {
 	commit
 }
 func (r *MPSC) Get(i *int64) bool {
-	var rp = r.rp
-	var pos = rp & r.mask
-	for rp >= atomic.LoadInt64(&r.log[pos]) {
+	var (
+		rp = r.rp
+		pos = rp & r.mask
+		seq = &r.log[pos]
+	)
+	for rp >= atomic.LoadInt64(seq) {
 		if !r.Opened() {
 			return false
 		}
 		runtime.Gosched()
 	}
 	*i = r.data[pos]
-	r.log[pos] = 0
+	*seq = 0
 	atomic.AddInt64(&r.rp, 1)
 	return true
 }
@@ -40,17 +43,19 @@ func (r *MPSC) Consume(fn func(int64)) {
 		}
 		var i = 0
 		for p := rp; p < wp; p++ {
-			var pos = p & r.mask
-			for atomic.LoadInt64(&r.log[pos]) == 0 {
+			var (
+				pos = p & r.mask
+				seq = &r.log[pos]
+			)
+			for atomic.LoadInt64(seq) == 0 {
 				runtime.Gosched()
 			}
 			fn(r.data[pos])
-			r.log[pos] = 0
+			*seq = 0
 			if i++; i & MaxBatch == 0 {
 				atomic.StoreInt64(&r.rp, p)
 			}
 		}
-
 		atomic.StoreInt64(&r.rp, wp)
 	}
 }

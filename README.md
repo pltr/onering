@@ -1,10 +1,10 @@
 ## One ring to queue them all
 
-Well, no. It's not really just one ring, but a collection of lock free ring buffers for different scenarios, so it's even better.
-These rings don't use CAS operations to make them suitable for low latency environments, as a side effect of that,
-they observe total order of messages.
+Well, no, it's not really just one ring, but a collection of lock free ring buffers for different scenarios, so it's even better!
+These queues don't use CAS operations to make them suitable for low latency environments and as a side effect of that,
+they observe total order of messages. As a reword for finding flaws/bugs in this, I offer 8 bytes of random numbers for each.
 
-Microbenchmarks are *everything*
+Microbenchmarks are *everything*, the most important thing in the universe.
 
     BenchmarkSPSC_Get-8     	20000000	        59.9 ns/op
     BenchmarkSPSC_Batch-8   	100000000	        12.7 ns/op
