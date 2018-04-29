@@ -12,8 +12,8 @@ type MPSC struct {
 func (r *MPSC) Get(i *int64) bool {
 	var rp = r.rp
 	var pos = rp & r.mask
-	for rp >= atomic.LoadInt64(&r.wp) {
-		if atomic.LoadInt32(&r.done) > 0 {
+	for rp >= atomic.LoadInt64(&r.log[pos]) {
+		if !r.Open() {
 			return false
 		}
 		runtime.Gosched()
