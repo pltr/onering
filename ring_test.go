@@ -162,32 +162,59 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkChanSPSC(b *testing.B) {
-	q := make(chan int64, 8192)
+func BenchmarkChan(b *testing.B) {
+	b.Run("SPSC", func(b *testing.B) {
+		q := make(chan int64, 8192)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+		var wg sync.WaitGroup
+		wg.Add(2)
 
-	go func(n int) {
-		runtime.LockOSThread()
-		for i := 0; i < n; i++ {
-			q <- int64(i)
-		}
-		wg.Done()
-	}(b.N)
+		go func(n int) {
+			runtime.LockOSThread()
+			for i := 0; i < n; i++ {
+				q <- int64(i)
+			}
+			wg.Done()
+		}(b.N)
 
-	go func(n int) {
-		runtime.LockOSThread()
-		for i := 0; i < n; i++ {
-			<-q
-		}
-		wg.Done()
-	}(b.N)
+		go func(n int) {
+			runtime.LockOSThread()
+			for i := 0; i < n; i++ {
+				<-q
+			}
+			wg.Done()
+		}(b.N)
 
-	wg.Wait()
-}
+		wg.Wait()
+	})
 
-func BenchmarkChanMPSC(b *testing.B) {
+	for i := 64; i <= 64; i <<= 1 {
+		producers := i
+		b.Run(fmt.Sprintf("SPMC-%d", producers), func(b *testing.B) {
+			single := b.N/producers + 1
+			total := single * producers
+			q := make(chan int64, 8192)
+			var wg sync.WaitGroup
+			wg.Add(producers + 1)
+			for p := 0; p < producers; p++ {
+				go func(n int) {
+					for i := 0; i < single; i++ {
+						<- q
+					}
+					wg.Done()
+				}(b.N)
+			}
+			go func(n int) {
+				runtime.LockOSThread()
+				for i := 0; i < total; i++ {
+					q <- int64(i)
+				}
+				wg.Done()
+			}(b.N)
+			wg.Wait()
+		})
+	}
+
 	for i := 64; i <= 64; i <<= 1 {
 		producers := i
 		b.Run(fmt.Sprintf("MPSC-%d", producers), func(b *testing.B) {

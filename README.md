@@ -16,8 +16,9 @@ Rings:
 
 Go channels:
 
-    BenchmarkChanSPSC-8         	100000000	        54.8 ns/op
-    BenchmarkChanMPSC/MPSC-64-8 	20000000	       333 ns/op
+    BenchmarkChan/SPSC-8        	30000000	        55.0 ns/op
+    BenchmarkChan/SPMC-64-8     	 5000000	       385 ns/op
+    BenchmarkChan/MPSC-64-8     	 3000000	       418 ns/op
 
 Generally a 4-10x increase in performance if you take advantage of batching.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
