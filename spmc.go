@@ -1,8 +1,8 @@
 package onering
 
 import (
-	"sync/atomic"
 	"runtime"
+	"sync/atomic"
 )
 
 type SPMC struct {
@@ -12,9 +12,9 @@ type SPMC struct {
 func (r *SPMC) Get(i *int64) bool {
 	var (
 		next = atomic.AddInt64(&r.rp, 1)
-		rp =  next - 1
-		pos = rp & r.mask
-		seq = &r.log[pos]
+		rp   = next - 1
+		pos  = rp & r.mask
+		seq  = &r.log[pos]
 	)
 	for atomic.LoadInt64(seq) != next {
 		if !r.Opened() {
@@ -27,10 +27,9 @@ func (r *SPMC) Get(i *int64) bool {
 	return true
 }
 
-
 func (r *SPMC) Put(i int64) {
 	var (
-		wp = r.wp
+		wp  = r.wp
 		pos = wp & r.mask
 		seq = &r.log[pos]
 	)
@@ -41,4 +40,3 @@ func (r *SPMC) Put(i int64) {
 	r.wp++
 	atomic.StoreInt64(seq, r.wp)
 }
-

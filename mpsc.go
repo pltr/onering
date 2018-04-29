@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 )
 
-
 type MPSC struct {
 	commit
 }
+
 func (r *MPSC) Get(i *int64) bool {
 	var (
-		rp = r.rp
+		rp  = r.rp
 		pos = rp & r.mask
 		seq = &r.log[pos]
 	)
@@ -30,7 +30,7 @@ func (r *MPSC) Get(i *int64) bool {
 func (r *MPSC) Consume(fn func(int64)) {
 	for {
 		var (
-			rp  = r.rp
+			rp = r.rp
 			wp int64
 		)
 		for {
@@ -52,7 +52,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 			}
 			fn(r.data[pos])
 			*seq = 0
-			if i++; i & MaxBatch == 0 {
+			if i++; i&MaxBatch == 0 {
 				atomic.StoreInt64(&r.rp, p)
 			}
 		}
@@ -61,11 +61,14 @@ func (r *MPSC) Consume(fn func(int64)) {
 }
 
 func (r *MPSC) Put(i int64) {
-	var wp = atomic.AddInt64(&r.wp, 1) - 1
-	var pos = wp & r.mask
+	var (
+		next = atomic.AddInt64(&r.wp, 1)
+		wp   = next - 1
+		pos  = wp & r.mask
+	)
 	for wp-atomic.LoadInt64(&r.rp) >= r.mask {
 		runtime.Gosched()
 	}
 	r.data[pos] = i
-	atomic.StoreInt64(&r.log[pos], wp+1)
+	atomic.StoreInt64(&r.log[pos], next)
 }

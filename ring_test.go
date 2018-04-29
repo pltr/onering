@@ -1,14 +1,14 @@
 package onering
 
 import (
-	"testing"
-	"sync"
 	"fmt"
 	"runtime"
+	"sync"
+	"testing"
 	"time"
 )
 
-func BenchmarkSPSC_Get(b *testing.B) {
+func BenchmarkRingSPSC_Get(b *testing.B) {
 	var ring SPSC
 	ring.Init(8192)
 	var wg sync.WaitGroup
@@ -39,9 +39,7 @@ func BenchmarkSPSC_Get(b *testing.B) {
 
 }
 
-
-
-func BenchmarkSPSC_Batch(b *testing.B) {
+func BenchmarkRingSPSC_Batch(b *testing.B) {
 	var ring SPSC
 	ring.Init(8192)
 	var wg sync.WaitGroup
@@ -67,13 +65,12 @@ func BenchmarkSPSC_Batch(b *testing.B) {
 	wg.Wait()
 }
 
-
-func BenchmarkSPMC(b *testing.B) {
+func BenchmarkRingSPMC(b *testing.B) {
 	var ring SPMC
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	var readers = 64
-	wg.Add(readers+1)
+	wg.Add(readers + 1)
 	pp := runtime.GOMAXPROCS(8)
 	for c := 0; c < readers; c++ {
 		go func(c int) {
@@ -97,16 +94,16 @@ func BenchmarkSPMC(b *testing.B) {
 	runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkMPSC_Get(b *testing.B) {
+func BenchmarkRingMPSC_Get(b *testing.B) {
 	var ring MPSC
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 64
-	wg.Add(producers+1)
+	wg.Add(producers + 1)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
-			var total = b.N / producers + 1
+			var total = b.N/producers + 1
 			var start = p * total
 			var end = start + total
 			for i := start; i < end; i++ {
@@ -131,16 +128,16 @@ func BenchmarkMPSC_Get(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkMPSC_Batch(b *testing.B) {
+func BenchmarkRingMPSC_Batch(b *testing.B) {
 	var ring MPSC
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 64
-	wg.Add(producers+1)
+	wg.Add(producers + 1)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
-			var total = b.N / producers + 1
+			var total = b.N/producers + 1
 			var start = p * total
 			var end = start + total
 			for i := start; i < end; i++ {
@@ -164,7 +161,6 @@ func BenchmarkMPSC_Batch(b *testing.B) {
 	wg.Wait()
 	//runtime.GOMAXPROCS(pp)
 }
-
 
 func BenchmarkChanSPSC(b *testing.B) {
 	q := make(chan int64, 8192)
@@ -195,11 +191,11 @@ func BenchmarkChanMPSC(b *testing.B) {
 	for i := 64; i <= 64; i <<= 1 {
 		producers := i
 		b.Run(fmt.Sprintf("MPSC-%d", producers), func(b *testing.B) {
-			single := b.N / producers+1
+			single := b.N/producers + 1
 			total := single * producers
 			q := make(chan int64, 8192)
 			var wg sync.WaitGroup
-			wg.Add(producers+1)
+			wg.Add(producers + 1)
 			for p := 0; p < producers; p++ {
 				go func(n int) {
 					for i := 0; i < single; i++ {
