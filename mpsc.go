@@ -6,14 +6,14 @@ import (
 )
 
 type MPSC struct {
-	commit
+	multi
 }
 
 func (r *MPSC) Get(i *int64) bool {
 	var (
 		rp  = r.rp
 		pos = rp & r.mask
-		seq = &r.log[pos]
+		seq = &r.seq[pos]
 	)
 	for rp >= atomic.LoadInt64(seq) {
 		if !r.Opened() {
@@ -45,7 +45,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 		for p := rp; p < wp; p++ {
 			var (
 				pos = p & r.mask
-				seq = &r.log[pos]
+				seq = &r.seq[pos]
 			)
 			for atomic.LoadInt64(seq) == 0 {
 				runtime.Gosched()
@@ -70,5 +70,5 @@ func (r *MPSC) Put(i int64) {
 		runtime.Gosched()
 	}
 	r.data[pos] = i
-	atomic.StoreInt64(&r.log[pos], next)
+	atomic.StoreInt64(&r.seq[pos], next)
 }

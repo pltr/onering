@@ -8,17 +8,17 @@ Microbenchmarks are *everything*, the most important thing in the universe.
 
 Rings:
 
-    BenchmarkRingSPSC_Get-8     	100000000	        59.2 ns/op
-    BenchmarkRingSPSC_Batch-8   	300000000	        12.7 ns/op
-    BenchmarkRingSPMC-8         	100000000	        41.0 ns/op
-    BenchmarkRingMPSC_Get-8     	100000000	        59.7 ns/op
-    BenchmarkRingMPSC_Batch-8   	100000000	        33.0 ns/op
+    BenchmarkRingSPSC_Get-8     	300000000	        59.0 ns/op
+    BenchmarkRingSPSC_Batch-8   	1000000000	        12.7 ns/op
+    BenchmarkRingSPMC-8         	300000000	        42.2 ns/op
+    BenchmarkRingMPSC_Get-8     	200000000	        60.5 ns/op
+    BenchmarkRingMPSC_Batch-8   	500000000	        32.6 ns/op
 
 Go channels:
 
-    BenchmarkChan/SPSC-8        	30000000	        55.0 ns/op
-    BenchmarkChan/SPMC-64-8     	 5000000	       385 ns/op
-    BenchmarkChan/MPSC-64-8     	 3000000	       418 ns/op
+    BenchmarkChan/SPSC-8         	300000000	        54.8 ns/op
+    BenchmarkChan/SPMC-64-8      	50000000	       327 ns/op
+    BenchmarkChan/MPSC-64-8      	100000000	       332 ns/op
 
 Generally a 4-10x increase in performance if you take advantage of batching.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.

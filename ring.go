@@ -31,13 +31,13 @@ func (r *ring) Opened() bool {
 	return atomic.LoadInt32(&r.done) == 0 || atomic.LoadInt64(&r.wp)-atomic.LoadInt64(&r.rp) > 0
 }
 
-type commit struct {
+type multi struct {
 	ring
-	log []int64
+	seq []int64
 	_   [4]int64
 }
 
-func (c *commit) Init(size uint) {
+func (c *multi) Init(size uint) {
 	c.ring.Init(size)
-	c.log = make([]int64, len(c.data))
+	c.seq = make([]int64, len(c.data))
 }

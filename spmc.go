@@ -6,7 +6,7 @@ import (
 )
 
 type SPMC struct {
-	commit
+	multi
 }
 
 func (r *SPMC) Get(i *int64) bool {
@@ -14,7 +14,7 @@ func (r *SPMC) Get(i *int64) bool {
 		next = atomic.AddInt64(&r.rp, 1)
 		rp   = next - 1
 		pos  = rp & r.mask
-		seq  = &r.log[pos]
+		seq  = &r.seq[pos]
 	)
 	for atomic.LoadInt64(seq) != next {
 		if !r.Opened() {
@@ -31,7 +31,7 @@ func (r *SPMC) Put(i int64) {
 	var (
 		wp  = r.wp
 		pos = wp & r.mask
-		seq = &r.log[pos]
+		seq = &r.seq[pos]
 	)
 	for atomic.LoadInt64(seq) != 0 {
 		runtime.Gosched()
