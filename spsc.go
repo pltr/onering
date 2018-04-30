@@ -45,7 +45,7 @@ func (r *SPSC) Consume(fn func(int64)) {
 	}
 }
 
-func (r *SPSC) Put(i int64) {
+func (r *SPSC) Write(i interface{}) {
 	var wp = r.wp
 	for wp-atomic.LoadInt64(&r.rp) >= r.mask {
 		runtime.Gosched()

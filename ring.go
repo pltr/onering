@@ -3,6 +3,7 @@ package onering
 import (
 	"math/bits"
 	"sync/atomic"
+	"unsafe"
 )
 
 const MaxBatch = 255
@@ -13,13 +14,15 @@ type ring struct {
 	_    [7]int64
 	rp   int64
 	_    [7]int64
-	data []int64
+	data []unsafe.Pointer
+	typ unsafe.Pointer
 	mask int64
 	done int32
+
 }
 
-func (r *ring) Init(size uint) {
-	r.data = make([]int64, 1<<uint(64-bits.LeadingZeros(size-1)))
+func (r *ring) Init(typ interface{}, size uint32) {
+	r.data = make([]unsafe.Pointer, 1<<uint(32-bits.LeadingZeros32(size-1)))
 	r.mask = int64(len(r.data) - 1)
 	r.done = 0
 }
@@ -38,8 +41,8 @@ type multi struct {
 	_   [5]int64
 }
 
-func (c *multi) Init(size uint) {
-	c.ring.Init(size)
+func (c *multi) Init(size uint32) {
+	c.ring.Init(nil, size)
 	c.seq = make([]int64, len(c.data))
 }
 

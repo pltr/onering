@@ -15,7 +15,7 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 	go func(n int) {
 		runtime.LockOSThread()
 		for i := 0; i < n; i++ {
-			ring.Put(int64(i))
+			ring.Write(int64(i))
 		}
 		ring.Close()
 		wg.Done()
@@ -46,7 +46,7 @@ func BenchmarkRingSPSC_Batch(b *testing.B) {
 	go func(n int) {
 		runtime.LockOSThread()
 		for i := 0; i < n; i++ {
-			ring.Put(int64(i))
+			ring.Write(int64(i))
 		}
 		wg.Done()
 	}(b.N)
