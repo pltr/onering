@@ -11,16 +11,14 @@ type SPMC struct {
 
 func (r *SPMC) Get(i *int64) bool {
 	var (
-		next = atomic.AddInt64(&r.rp, 1)
-		rp   = next - 1
-		pos  = rp & r.mask
-		seq  = &r.seq[pos]
+		rp  = atomic.AddInt64(&r.rp, 1) - 1
+		pos = rp & r.mask
+		seq = &r.seq[pos]
 	)
-	for atomic.LoadInt64(seq) != next {
-		if !r.Opened() {
+	for next := rp + 1; atomic.LoadInt64(seq) != next; runtime.Gosched() {
+		if r.Done() {
 			return false
 		}
-		runtime.Gosched()
 	}
 	*i = r.data[pos]
 	atomic.StoreInt64(seq, 0)

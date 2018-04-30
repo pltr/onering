@@ -6,6 +6,7 @@ import (
 )
 
 const MaxBatch = 255
+const spin = 512 - 1 // not used at the moment
 
 type ring struct {
 	wp   int64
@@ -27,17 +28,23 @@ func (r *ring) Close() {
 	atomic.StoreInt32(&r.done, 1)
 }
 
-func (r *ring) Opened() bool {
-	return atomic.LoadInt32(&r.done) == 0 || atomic.LoadInt64(&r.wp)-atomic.LoadInt64(&r.rp) > 0
+func (r *ring) Done() bool {
+	return atomic.LoadInt32(&r.done) > 0 && atomic.LoadInt64(&r.wp) <= atomic.LoadInt64(&r.rp)
 }
 
 type multi struct {
 	ring
 	seq []int64
-	_   [4]int64
+	_   [5]int64
 }
 
 func (c *multi) Init(size uint) {
 	c.ring.Init(size)
 	c.seq = make([]int64, len(c.data))
 }
+
+// empty sync.Locker for conditionals
+type NoLock struct{}
+
+func (NoLock) Lock()   {}
+func (NoLock) Unlock() {}

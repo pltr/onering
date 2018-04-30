@@ -15,7 +15,7 @@ type SPSC struct {
 func (r *SPSC) Get(i *int64) bool {
 	var rp = r.rp
 	for rp >= atomic.LoadInt64(&r.wp) {
-		if atomic.LoadInt32(&r.done) > 0 {
+		if r.Done() {
 			return false
 		}
 		runtime.Gosched()
@@ -27,17 +27,12 @@ func (r *SPSC) Get(i *int64) bool {
 
 func (r *SPSC) Consume(fn func(int64)) {
 	for {
-		var (
-			rp = r.rp
-			wp int64
-		)
-		for {
-			if wp = atomic.LoadInt64(&r.wp); wp > rp {
-				break
-			} else if atomic.LoadInt32(&r.done) > 0 {
+		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
+		for ; rp >= wp; runtime.Gosched() {
+			if r.Done() {
 				return
 			}
-			runtime.Gosched()
+			wp = atomic.LoadInt64(&r.wp)
 		}
 		var i = 0
 		for p := rp; p < wp; p++ {

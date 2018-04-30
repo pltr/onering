@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"sync"
 	"testing"
-	"time"
 )
 
 func BenchmarkRingSPSC_Get(b *testing.B) {
@@ -71,7 +70,7 @@ func BenchmarkRingSPMC(b *testing.B) {
 	var wg sync.WaitGroup
 	var readers = 64
 	wg.Add(readers + 1)
-	pp := runtime.GOMAXPROCS(8)
+	//pp := runtime.GOMAXPROCS(8)
 	for c := 0; c < readers; c++ {
 		go func(c int) {
 			var i int64
@@ -81,7 +80,6 @@ func BenchmarkRingSPMC(b *testing.B) {
 			wg.Done()
 		}(c)
 	}
-	time.Sleep(1000)
 	go func(n int) {
 		runtime.LockOSThread()
 		for i := 0; i < n; i++ {
@@ -91,7 +89,7 @@ func BenchmarkRingSPMC(b *testing.B) {
 		wg.Done()
 	}(b.N)
 	wg.Wait()
-	runtime.GOMAXPROCS(pp)
+	//runtime.GOMAXPROCS(pp)
 }
 
 func BenchmarkRingMPSC_Get(b *testing.B) {

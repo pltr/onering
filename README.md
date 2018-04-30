@@ -1,4 +1,4 @@
-## One ring to queue them all
+## One Ring to Queue Them All
 
 Well, no, it's not really just one ring, but a collection of lock free ring buffers for different scenarios, so it's even better!
 These queues don't use CAS operations to make them suitable for low latency environments and as a side effect of that,
@@ -23,4 +23,7 @@ Go channels:
 Generally a 4-10x increase in performance if you take advantage of batching.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
-TODO: Add producer batching
+The API is unstable at the moment, there are no guarantees about anything
+
+### TODO
+ * Add producer batching
