@@ -399,33 +399,32 @@ func TestXOneringMPSCBatch(t *testing.T) {
 
 func TestRingMPMC_Get(t *testing.T) {
 	var ring MPMC
-	ring.Init(8192)
+	ring.Init(4)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 2
+	var producers = 4
 	wg.Add(producers*2)
-	var N = 100
-	var total = int32(N)
+	var N = 1000
 	for p := 0; p < producers; p++ {
 		go func(p int) {
 			runtime.LockOSThread()
-			var size = N/producers + 1
-			for i := 0; i < size; i++ {
+			for i := 0; i < N; i++ {
 				ring.Put(int64(i))
 			}
 			wg.Done()
 		}(p)
 	}
-	var ch = make(chan int64, N)
+	var ch = make(chan int64, N*producers)
 	for p := 0; p < producers; p++ {
 		go func(c int) {
 			runtime.LockOSThread()
 			var v int64
+			var i = 0
 			for ring.Get(&v) {
+				i++
 				ch <- v
-				atomic.AddInt32(&total, -1)
-				if atomic.LoadInt32(&total) <= 0 {
-					ring.Close()
+				if i == N {
+					break
 				}
 			}
 			wg.Done()
@@ -433,16 +432,17 @@ func TestRingMPMC_Get(t *testing.T) {
 	}
 
 	var m = map[int64]int{}
-	for i := 0; i < N+2; i++ {
-		v := <- ch
+	for i := 0; i < N*4; i++ {
+		v := <-ch
 		m[v]++
 	}
 
 	for k, v := range m {
-		if v != 2 {
-			t.Fatalf("%v != 2: %v", k, m)
+		if v != producers {
+			t.Fatalf("%v(%v) != 4: %v", k, v, m)
 		}
 	}
+	fmt.Println("waiting")
 	wg.Wait()
 
 	//runtime.GOMAXPROCS(pp)
