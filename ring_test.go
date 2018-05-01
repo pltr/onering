@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"sync/atomic"
 )
 
 const MULTI = 100
@@ -161,6 +162,81 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	wg.Wait()
 	//runtime.GOMAXPROCS(pp)
 }
+
+
+func BenchmarkRingMPMC_Get(b *testing.B) {
+	var ring MPMC
+	ring.Init(8192)
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 2
+	wg.Add(producers*2)
+	var total = int32(b.N)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			runtime.LockOSThread()
+			var size = b.N/producers + 1
+			for i := 0; i < size; i++ {
+				ring.Put(int64(i))
+			}
+			wg.Done()
+		}(p)
+	}
+
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			runtime.LockOSThread()
+			var v int64
+			for ring.Get(&v) {
+				atomic.AddInt32(&total, -1)
+				if atomic.LoadInt32(&total) <= 0 {
+					ring.Close()
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+	//runtime.GOMAXPROCS(pp)
+}
+
+func BenchmarkChanMPMC(b *testing.B) {
+	var ch = make(chan int64, 8192)
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 2
+	wg.Add(producers)
+	var total = int32(b.N)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			runtime.LockOSThread()
+			var size = b.N/producers + 1
+			for i := 0; i < size; i++ {
+				ch <- int64(i)
+			}
+			wg.Done()
+		}(p)
+	}
+
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			runtime.LockOSThread()
+			for {
+				for range ch {
+					atomic.AddInt32(&total, -1)
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+	for atomic.LoadInt32(&total) > 0 {
+		runtime.Gosched()
+	}
+	close(ch)
+	//runtime.GOMAXPROCS(pp)
+}
+
 
 func BenchmarkChan(b *testing.B) {
 	b.Run("SPSC", func(b *testing.B) {
@@ -319,4 +395,55 @@ func TestXOneringMPSCBatch(t *testing.T) {
 		})
 	}()
 	wg.Wait()
+}
+
+func TestRingMPMC_Get(t *testing.T) {
+	var ring MPMC
+	ring.Init(8192)
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 2
+	wg.Add(producers*2)
+	var N = 100
+	var total = int32(N)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			runtime.LockOSThread()
+			var size = N/producers + 1
+			for i := 0; i < size; i++ {
+				ring.Put(int64(i))
+			}
+			wg.Done()
+		}(p)
+	}
+	var ch = make(chan int64, N)
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			runtime.LockOSThread()
+			var v int64
+			for ring.Get(&v) {
+				ch <- v
+				atomic.AddInt32(&total, -1)
+				if atomic.LoadInt32(&total) <= 0 {
+					ring.Close()
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+
+	var m = map[int64]int{}
+	for i := 0; i < N+2; i++ {
+		v := <- ch
+		m[v]++
+	}
+
+	for k, v := range m {
+		if v != 2 {
+			t.Fatalf("%v != 2: %v", k, m)
+		}
+	}
+	wg.Wait()
+
+	//runtime.GOMAXPROCS(pp)
 }

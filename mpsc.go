@@ -6,6 +6,7 @@ import (
 )
 
 type MPSC struct {
+	_ [8]int64
 	multi
 }
 

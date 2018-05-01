@@ -18,8 +18,8 @@ type ring struct {
 	done int32
 }
 
-func (r *ring) Init(size uint) {
-	r.data = make([]int64, 1<<uint(64-bits.LeadingZeros(size-1)))
+func (r *ring) Init(size uint32) {
+	r.data = make([]int64, 1<<uint32(32-bits.LeadingZeros32(size-1)))
 	r.mask = int64(len(r.data) - 1)
 	r.done = 0
 }
@@ -38,7 +38,7 @@ type multi struct {
 	_   [5]int64
 }
 
-func (c *multi) Init(size uint) {
+func (c *multi) Init(size uint32) {
 	c.ring.Init(size)
 	c.seq = make([]int64, len(c.data))
 }
