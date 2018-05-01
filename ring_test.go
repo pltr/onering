@@ -169,7 +169,7 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 2
+	var producers = 4
 	wg.Add(producers*2)
 	var total = int32(b.N)
 	for p := 0; p < producers; p++ {
@@ -204,7 +204,7 @@ func BenchmarkChanMPMC(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 2
+	var producers = 4
 	wg.Add(producers)
 	var total = int32(b.N)
 	for p := 0; p < producers; p++ {
