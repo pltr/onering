@@ -1,7 +1,6 @@
 package onering
 
 import (
-	"runtime"
 	"sync/atomic"
 )
 
@@ -9,7 +8,7 @@ import (
 
 type SPSC struct {
 	ring
-	_ [5]int64
+	_ [24]byte
 }
 
 func (r *SPSC) Get(i *int64) bool {
@@ -18,17 +17,17 @@ func (r *SPSC) Get(i *int64) bool {
 		if r.Done() {
 			return false
 		}
-		runtime.Gosched()
+		r.wait()
 	}
 	*i = r.data[rp&r.mask]
-	atomic.AddInt64(&r.rp, 1)
+	atomic.StoreInt64(&r.rp, rp+1)
 	return true
 }
 
 func (r *SPSC) Consume(fn func(int64)) {
 	for {
 		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
-		for ; rp >= wp; runtime.Gosched() {
+		for ; rp >= wp; r.wait() {
 			if r.Done() {
 				return
 			}
@@ -47,9 +46,9 @@ func (r *SPSC) Consume(fn func(int64)) {
 
 func (r *SPSC) Put(i int64) {
 	var wp = r.wp
-	for wp-atomic.LoadInt64(&r.rp) >= r.mask {
-		runtime.Gosched()
+	for diff := wp - r.mask; diff >= atomic.LoadInt64(&r.rp); {
+		r.wait()
 	}
 	r.data[wp&r.mask] = i
-	atomic.AddInt64(&r.wp, 1)
+	atomic.StoreInt64(&r.wp, wp+1)
 }

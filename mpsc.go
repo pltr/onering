@@ -1,33 +1,26 @@
 package onering
 
 import (
-	"runtime"
 	"sync/atomic"
 )
 
 type MPSC struct {
-	_ [8]int64
 	multi
-}
-
-func (r *MPSC) wait() {
-	runtime.Gosched()
 }
 
 func (r *MPSC) Get(i *int64) bool {
 	var (
-		rp  = r.rp
-		pos = rp & r.mask
-		seq = &r.seq[pos]
+		rp        = r.rp
+		data, seq = r.contents(rp)
 	)
-	for rp >= atomic.LoadInt64(seq) {
+	for rp > atomic.LoadInt64(seq) {
 		if r.Done() {
 			return false
 		}
 		r.wait()
 	}
-	*i = r.data[pos]
-	*seq = 0
+	*i = *data
+	*seq = -rp
 	atomic.StoreInt64(&r.rp, rp+1)
 	return true
 }
@@ -47,26 +40,26 @@ func (r *MPSC) Consume(fn func(int64)) {
 				pos = p & r.mask
 				seq = &r.seq[pos]
 			)
-			if i++; atomic.LoadInt64(seq) == 0 || i&MaxBatch == 0 {
+			if i++; atomic.LoadInt64(seq) <= 0 || i&MaxBatch == 0 {
 				atomic.StoreInt64(&r.rp, p)
 				for atomic.LoadInt64(seq) == 0 {
-					runtime.Gosched()
+					r.wait()
 				}
 			}
 
 			fn(r.data[pos])
-			*seq = 0
+			*seq = -p
 		}
 		atomic.StoreInt64(&r.rp, wp)
 	}
 }
 
 func (r *MPSC) Put(i int64) {
-	var wp = atomic.AddInt64(&r.wp, 1) - 1
-	for wp-atomic.LoadInt64(&r.rp) >= r.mask {
-		runtime.Gosched()
+	var wp = r.next(&r.wp)
+	for diff := wp - r.mask; diff >= atomic.LoadInt64(&r.rp); {
+		r.wait()
 	}
 	var pos = wp & r.mask
 	r.data[pos] = i
-	atomic.StoreInt64(&r.seq[pos], wp+1)
+	atomic.StoreInt64(&r.seq[pos], wp)
 }

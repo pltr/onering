@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"sync"
 	"testing"
-	"sync/atomic"
 )
 
 const MULTI = 100
@@ -163,18 +162,16 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-
 func BenchmarkRingMPMC_Get(b *testing.B) {
 	var ring MPMC
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 50
-	wg.Add(producers*2)
+	wg.Add(producers * 2)
 	//var total = int32(b.N)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
-			runtime.LockOSThread()
 			var size = b.N/producers + 1
 			for i := 0; i < size; i++ {
 				ring.Put(int64(i))
@@ -185,7 +182,6 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 
 	for p := 0; p < producers; p++ {
 		go func(c int) {
-			runtime.LockOSThread()
 			var v int64
 			var total = b.N/producers + 1
 			for i := 0; ring.Get(&v); {
@@ -204,12 +200,10 @@ func BenchmarkChanMPMC(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 4
-	wg.Add(producers)
-	var total = int32(b.N)
+	var producers = 50
+	wg.Add(producers * 2)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
-			runtime.LockOSThread()
 			var size = b.N/producers + 1
 			for i := 0; i < size; i++ {
 				ch <- int64(i)
@@ -220,23 +214,17 @@ func BenchmarkChanMPMC(b *testing.B) {
 
 	for p := 0; p < producers; p++ {
 		go func(c int) {
-			runtime.LockOSThread()
-			for {
-				for range ch {
-					atomic.AddInt32(&total, -1)
-				}
+			for n := b.N/producers + 1; n > 0; n-- {
+				v := <-ch
+				_ = v
 			}
+
 			wg.Done()
 		}(p)
 	}
 	wg.Wait()
-	for atomic.LoadInt32(&total) > 0 {
-		runtime.Gosched()
-	}
-	close(ch)
 	//runtime.GOMAXPROCS(pp)
 }
-
 
 func BenchmarkChan(b *testing.B) {
 	b.Run("SPSC", func(b *testing.B) {
@@ -275,7 +263,7 @@ func BenchmarkChan(b *testing.B) {
 			for p := 0; p < producers; p++ {
 				go func(n int) {
 					for i := 0; i < single; i++ {
-						<- q
+						<-q
 					}
 					wg.Done()
 				}(b.N)
@@ -370,7 +358,7 @@ func TestXOneringMPSCBatch(t *testing.T) {
 	const P = 4
 	const C = 2
 	var wg sync.WaitGroup
-	wg.Add(P+1)
+	wg.Add(P + 1)
 	for id := 0; id < P; id++ {
 		go func(id int) {
 			defer wg.Done()
@@ -403,7 +391,7 @@ func TestRingMPMC_Get(t *testing.T) {
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 4
-	wg.Add(producers*2)
+	wg.Add(producers * 2)
 	var N = 1000
 	for p := 0; p < producers; p++ {
 		go func(p int) {

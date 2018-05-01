@@ -1,20 +1,20 @@
 package onering
 
 import (
-	"github.com/codahale/hdrhistogram"
 	"fmt"
-	"testing"
-	"sync"
+	"github.com/codahale/hdrhistogram"
 	"runtime"
+	"sync"
+	"testing"
 	"time"
 )
 
 // courtesy of Kelly Sommers aka @kellabyte
 
 const (
-	sampleE = 11
+	sampleE     = 11
 	sampleTimes = 1 << sampleE
-	sampleMask = sampleTimes -1
+	sampleMask  = sampleTimes - 1
 )
 
 func BenchmarkResponseTimesRing(b *testing.B) {
@@ -22,21 +22,21 @@ func BenchmarkResponseTimesRing(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	wg.Add(2)
-	var diffs = make([]int64, (b.N / sampleTimes)+1)
+	var diffs = make([]int64, (b.N/sampleTimes)+1)
 	b.ResetTimer()
 	go func(n int) {
 		runtime.LockOSThread()
 		var t1 = time.Now().UnixNano()
 		for i := 1; i < n; i++ {
 			var v int64 = 0
-			if i & sampleMask == 0 {
+			if i&sampleMask == 0 {
 				v = t1
 				t1 = time.Now().UnixNano()
 			}
 			ring.Put(v)
 		}
 		wg.Done()
-	}(b.N+1)
+	}(b.N + 1)
 	go func(n int) {
 		runtime.LockOSThread()
 		var i int = 0
@@ -57,8 +57,6 @@ func BenchmarkResponseTimesRing(b *testing.B) {
 	recordLatencyDistribution("BenchmarkResponseTimesRing", diffs)
 }
 
-
-
 func BenchmarkResponseTimesChannel(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
@@ -70,7 +68,7 @@ func BenchmarkResponseTimesChannel(b *testing.B) {
 		var t1 = time.Now().UnixNano()
 		for i := 1; i < n; i++ {
 			var v int64 = 0
-			if i & sampleMask == 0 {
+			if i&sampleMask == 0 {
 				v = t1
 				t1 = time.Now().UnixNano()
 			}
@@ -78,7 +76,7 @@ func BenchmarkResponseTimesChannel(b *testing.B) {
 		}
 		close(ch)
 		wg.Done()
-	}(b.N+1)
+	}(b.N + 1)
 	go func(n int) {
 		runtime.LockOSThread()
 		var i = 0
