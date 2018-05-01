@@ -1,7 +1,7 @@
 ## One Ring to Queue Them All
 
-Well, no, it's not really just one ring, but a collection of lock-free (wait free, even) ring buffers for different scenarios, so it's even better!
-These queues don't use CAS operations to make them suitable for low latency environments and as a side effect of that,
+Well, no, it's not really just one ring, but a collection of lock-free (wait-free, even) ring buffers for different scenarios, so it's even better!
+These queues don't use CAS operations to make them suitable for low latency/real-time environments and as a side effect of that,
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64 of random numbers for each.
 
 Microbenchmarks are *everything*, the most important thing in the universe.
