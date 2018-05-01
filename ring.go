@@ -56,7 +56,7 @@ func (c *multi) next(p *int64) int64 {
 	return atomic.AddInt64(p, 1) - 1
 }
 
-func (c *multi) contents(p int64) (data, seq *int64) {
+func (c *multi) frame(p int64) (data, seq *int64) {
 	var pos = c.mask & p
 	return &c.data[pos], &c.seq[pos]
 }

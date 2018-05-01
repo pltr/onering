@@ -11,7 +11,7 @@ type MPSC struct {
 func (r *MPSC) Get(i *int64) bool {
 	var (
 		rp        = r.rp
-		data, seq = r.contents(rp)
+		data, seq = r.frame(rp)
 	)
 	for rp > atomic.LoadInt64(seq) {
 		if r.Done() {
@@ -36,10 +36,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 		}
 
 		for p, i := rp, 0; p < wp; p++ {
-			var (
-				pos = p & r.mask
-				seq = &r.seq[pos]
-			)
+			var data, seq = r.frame(p)
 			if i++; atomic.LoadInt64(seq) <= 0 || i&MaxBatch == 0 {
 				atomic.StoreInt64(&r.rp, p)
 				for atomic.LoadInt64(seq) == 0 {
@@ -47,7 +44,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 				}
 			}
 
-			fn(r.data[pos])
+			fn(*data)
 			*seq = -p
 		}
 		atomic.StoreInt64(&r.rp, wp)

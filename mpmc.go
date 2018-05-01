@@ -22,7 +22,7 @@ func (r *MPMC) Init(size uint32) {
 func (r *MPMC) Get(i *int64) bool {
 	var (
 		rp        = r.next(&r.rp)
-		data, seq = r.contents(rp)
+		data, seq = r.frame(rp)
 	)
 	for ; atomic.LoadInt64(seq) != rp; r.wait() {
 		if r.Done() {
@@ -37,7 +37,7 @@ func (r *MPMC) Get(i *int64) bool {
 func (r *MPMC) Put(i int64) {
 	var (
 		wp        = r.next(&r.wp)
-		data, seq = r.contents(wp)
+		data, seq = r.frame(wp)
 	)
 	for pread := r.size - wp; atomic.LoadInt64(seq) != pread; {
 		r.wait()
