@@ -6,8 +6,6 @@ import (
 
 // my precious
 
-// I haven't actually seen this implementation of WFPO MPMC before, would appreciate if someone knows something about it
-
 type MPMC struct {
 	multi
 }
