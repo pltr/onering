@@ -13,7 +13,7 @@ Rings:
     BenchmarkRingSPMC-8         	300000000	        42.2 ns/op
     BenchmarkRingMPSC_Get-8     	200000000	        60.5 ns/op
     BenchmarkRingMPSC_Batch-8   	500000000	        32.6 ns/op
-    BenchmarkRingMPMC_Get-8         100000000	        52.6 ns/op
+    BenchmarkRingMPMC_Get-8   	    100000000	        41.9 ns/op
 
 Go channels:
 

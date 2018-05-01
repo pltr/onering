@@ -169,9 +169,9 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 4
+	var producers = 50
 	wg.Add(producers*2)
-	var total = int32(b.N)
+	//var total = int32(b.N)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
 			runtime.LockOSThread()
@@ -187,10 +187,10 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 		go func(c int) {
 			runtime.LockOSThread()
 			var v int64
-			for ring.Get(&v) {
-				atomic.AddInt32(&total, -1)
-				if atomic.LoadInt32(&total) <= 0 {
-					ring.Close()
+			var total = b.N/producers + 1
+			for i := 0; ring.Get(&v); {
+				if i++; i == total {
+					break
 				}
 			}
 			wg.Done()
