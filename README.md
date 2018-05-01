@@ -1,8 +1,8 @@
 ## One Ring to Queue Them All
 
-Well, no, it's not really just one ring, but a collection of lock free ring buffers for different scenarios, so it's even better!
+Well, no, it's not really just one ring, but a collection of lock-free (wait free, even) ring buffers for different scenarios, so it's even better!
 These queues don't use CAS operations to make them suitable for low latency environments and as a side effect of that,
-they observe total order of messages. As a reward for finding flaws/bugs in this, I offer 8 bytes of random numbers for each.
+they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64 of random numbers for each.
 
 Microbenchmarks are *everything*, the most important thing in the universe.
 
@@ -43,3 +43,5 @@ Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)
 ![chart](https://camo.githubusercontent.com/553d9f8936ed5f298e1b3c0de1724d71b5c57cea/68747470733a2f2f692e696d6775722e636f6d2f78547a397645432e706e67
  "Queue Benchmark")
+
+Special thanks to @kellabyte and @egonelbre
