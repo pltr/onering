@@ -24,10 +24,11 @@ Generally a 4-10x increase in performance if you take advantage of batching.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
     BenchmarkResponseTimesRing-8
+
     [Sample size: 2048 messages] 50: 18ns	75: 19ns	90: 22ns	99: 22ns	99.9: 22ns	99.99: 22ns	99.999: 22ns	99.9999: 22ns
     [Sample size: 2048 messages] 50: 17ns	75: 19ns	90: 21ns	99: 25ns	99.9: 33ns	99.99: 33ns	99.999: 33ns	99.9999: 33ns
     [Sample size: 2048 messages] 50: 15ns	75: 17ns	90: 18ns	99: 34ns	99.9: 46ns	99.99: 54ns	99.999: 77ns	99.9999: 77ns
-    100000000	        12.6 ns/op
+
     BenchmarkResponseTimesChannel-8
     [Sample size: 2048 messages] 50: 169ns	75: 170ns	90: 170ns	99: 170ns	99.9: 170ns	99.99: 170ns	99.999: 170ns	99.9999: 170ns
     [Sample size: 2048 messages] 50: 157ns	75: 205ns	90: 251ns	99: 352ns	99.9: 421ns	99.99: 421ns	99.999: 421ns	99.9999: 421ns
@@ -40,4 +41,5 @@ The API is unstable at the moment, there are no guarantees about anything
 
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)
-https://camo.githubusercontent.com/553d9f8936ed5f298e1b3c0de1724d71b5c57cea/68747470733a2f2f692e696d6775722e636f6d2f78547a397645432e706e67
+![chart](https://camo.githubusercontent.com/553d9f8936ed5f298e1b3c0de1724d71b5c57cea/68747470733a2f2f692e696d6775722e636f6d2f78547a397645432e706e67
+ "Queue Benchmark")
