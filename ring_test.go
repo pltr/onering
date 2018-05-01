@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const MULTI = 100
+
 func BenchmarkRingSPSC_Get(b *testing.B) {
 	var ring SPSC
 	ring.Init(8192)
@@ -68,7 +70,7 @@ func BenchmarkRingSPMC(b *testing.B) {
 	var ring SPMC
 	ring.Init(8192)
 	var wg sync.WaitGroup
-	var readers = 64
+	var readers = MULTI
 	wg.Add(readers + 1)
 	//pp := runtime.GOMAXPROCS(8)
 	for c := 0; c < readers; c++ {
@@ -97,7 +99,7 @@ func BenchmarkRingMPSC_Get(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 64
+	var producers = MULTI
 	wg.Add(producers + 1)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
@@ -131,7 +133,7 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 64
+	var producers = MULTI
 	wg.Add(producers + 1)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
