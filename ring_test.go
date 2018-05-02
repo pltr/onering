@@ -11,7 +11,7 @@ const MULTI = 100
 
 func BenchmarkRingSPSC_Get(b *testing.B) {
 	var ring SPSC
-	ring.Init(8192)
+	ring.init(Pointer,8192)
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func(n int) {
@@ -42,7 +42,7 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 
 func BenchmarkRingSPSC_Batch(b *testing.B) {
 	var ring SPSC
-	ring.Init(8192)
+	ring.init(Pointer,8192)
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func(n int) {
@@ -68,7 +68,7 @@ func BenchmarkRingSPSC_Batch(b *testing.B) {
 
 func BenchmarkRingSPMC(b *testing.B) {
 	var ring SPMC
-	ring.Init(8192)
+	ring.init(Pointer,8192)
 	var wg sync.WaitGroup
 	var readers = MULTI
 	wg.Add(readers + 1)
@@ -96,7 +96,7 @@ func BenchmarkRingSPMC(b *testing.B) {
 
 func BenchmarkRingMPSC_Get(b *testing.B) {
 	var ring MPSC
-	ring.Init(8192)
+	ring.init(Pointer,8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = MULTI
@@ -130,7 +130,7 @@ func BenchmarkRingMPSC_Get(b *testing.B) {
 
 func BenchmarkRingMPSC_Batch(b *testing.B) {
 	var ring MPSC
-	ring.Init(8192)
+	ring.init(Pointer,8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = MULTI
@@ -164,7 +164,7 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 
 func BenchmarkRingMPMC_Get(b *testing.B) {
 	var ring MPMC
-	ring.Init(8192)
+	ring.init(Pointer, 8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 50
@@ -312,7 +312,7 @@ func TestXOneringSPMC(t *testing.T) {
 	const P = 4
 	const N = 100
 	var q SPMC
-	q.Init(4)
+	q.init(Pointer,4)
 
 	var wg sync.WaitGroup
 	wg.Add(P + 1)
@@ -354,7 +354,7 @@ func TestXOneringSPMC(t *testing.T) {
 
 func TestXOneringMPSCBatch(t *testing.T) {
 	var q MPSC
-	q.Init(2)
+	q.init(Pointer,2)
 	const P = 4
 	const C = 2
 	var wg sync.WaitGroup
@@ -387,7 +387,7 @@ func TestXOneringMPSCBatch(t *testing.T) {
 
 func TestRingMPMC_Get(t *testing.T) {
 	var ring MPMC
-	ring.Init(4)
+	ring.init(Pointer,4)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 4

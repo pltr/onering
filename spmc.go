@@ -8,7 +8,7 @@ type SPMC struct {
 	multi
 }
 
-func (r *SPMC) Get(i *int64) bool {
+func (r *SPMC) Get(i interface{}) bool {
 	var (
 		rp        = r.next(&r.rp)
 		data, seq = r.frame(rp)
@@ -18,12 +18,12 @@ func (r *SPMC) Get(i *int64) bool {
 			return false
 		}
 	}
-	*i = *data
+	r.inject(extractptr(i), data)
 	atomic.StoreInt64(seq, -rp)
 	return true
 }
 
-func (r *SPMC) Put(i int64) {
+func (r *SPMC) Put(i interface{}) {
 	var (
 		wp        = r.wp
 		data, seq = r.frame(wp)
@@ -31,7 +31,7 @@ func (r *SPMC) Put(i int64) {
 	for atomic.LoadInt64(seq) > 0 {
 		r.wait()
 	}
-	*data = i
+	*data = extractptr(i)
 	r.wp++
 	atomic.StoreInt64(seq, wp)
 }
