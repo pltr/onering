@@ -1,20 +1,19 @@
 package onering
 
 type Queue interface {
-	Read(interface{}) bool
-	Write(interface{})
+	Get(interface{}) bool
+	Put(interface{})
+	ReadTicket() Ticket
+	WriteTicket() Ticket
 }
-
 type New struct {
-	Type interface{}
-	Capacity uint32
-	BatchSize uint32
-	Wait Waiter
+	Type Injector
+	Size uint32
 }
 
 func (nq New) SPSC() *SPSC {
 	var q SPSC
-	q.Init(nq.Type, nq.Capacity)
+	q.init(nq.Type, nq)
 	return &q
 }
 
@@ -22,4 +21,9 @@ type Waiter interface {
 	Wait()
 	Signal()
 	Broadcast()
+}
+
+type Ticket interface {
+	Try(interface{}) bool
+	Use(interface{}) bool
 }
