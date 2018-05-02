@@ -45,6 +45,7 @@ func BenchmarkRingSPSC_Batch(b *testing.B) {
 	ring.Init(8192)
 	var wg sync.WaitGroup
 	wg.Add(2)
+	//pp := runtime.GOMAXPROCS(8)
 	go func(n int) {
 		runtime.LockOSThread()
 		for i := 0; i < n; i++ {
@@ -64,6 +65,7 @@ func BenchmarkRingSPSC_Batch(b *testing.B) {
 	}(b.N)
 
 	wg.Wait()
+	//runtime.GOMAXPROCS(pp)
 }
 
 func BenchmarkRingSPMC(b *testing.B) {
