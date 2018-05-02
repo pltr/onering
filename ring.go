@@ -6,7 +6,8 @@ import (
 	"sync/atomic"
 )
 
-const MaxBatch = 255
+const MaxBatch = 8
+const batchsize = (1 << MaxBatch) - 1
 const spin = 512 - 1 // not used at the moment
 
 type ring struct {
@@ -59,6 +60,13 @@ func (c *multi) next(p *int64) int64 {
 func (c *multi) frame(p int64) (data, seq *int64) {
 	var pos = c.mask & p
 	return &c.data[pos], &c.seq[pos]
+}
+
+func batchsplit(rp, wp int64) (bsize, mod int64) {
+	var total = wp-rp
+	bsize = total >> MaxBatch
+	mod = total & batchsize
+	return
 }
 
 // empty sync.Locker for conditionals

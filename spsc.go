@@ -33,12 +33,14 @@ func (r *SPSC) Consume(fn func(int64)) {
 			}
 			wp = atomic.LoadInt64(&r.wp)
 		}
-		var i = 0
-		for p := rp; p < wp; p++ {
-			fn(r.data[p&r.mask])
-			if i++; i&MaxBatch == 0 {
-				atomic.StoreInt64(&r.rp, p)
+		for bsize := (wp - rp) >> MaxBatch; bsize > 0; bsize-- {
+			for end := rp + batchsize; rp < end; rp++ {
+				fn(r.data[rp&r.mask])
 			}
+			atomic.StoreInt64(&r.rp, rp)
+		}
+		for ; rp < wp; rp++ {
+			fn(r.data[rp&r.mask])
 		}
 		atomic.StoreInt64(&r.rp, wp)
 	}

@@ -37,7 +37,7 @@ func (r *MPSC) Consume(fn func(int64)) {
 
 		for p, i := rp, 0; p < wp; p++ {
 			var data, seq = r.frame(p)
-			if i++; atomic.LoadInt64(seq) <= 0 || i&MaxBatch == 0 {
+			if i++; atomic.LoadInt64(seq) <= 0 || i&batchsize == 0 {
 				atomic.StoreInt64(&r.rp, p)
 				for atomic.LoadInt64(seq) == 0 {
 					r.wait()
