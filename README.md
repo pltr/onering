@@ -110,8 +110,10 @@ Go channels:
     BenchmarkChan/SPMC_NoLock-8         	100000000	        46.3 ns/op
 
 "NoLock" tests are tests without pinning goroutines via `runtime.LockOSThread()` - has nothing to do with mutexes or some such.
+
 You can generally expect a 2-10x increase in performance, especially if you take advantage of batching and/or use a heavy multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
+
 Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution:
 
     BenchmarkResponseTimesRing-8
