@@ -316,130 +316,175 @@ func BenchmarkChan(b *testing.B) {
 }
 
 //// courtesy or Egon Elbre
-//func TestXOneringSPMC(t *testing.T) {
-//	const P = 4
-//	const N = 100
-//	var q SPMC
-//	q.init(Pointer,4)
+func TestXOneringSPMC(t *testing.T) {
+	const P = 4
+	const N = 100
+	var q = New{4}.SPMC()
+
+	var wg sync.WaitGroup
+	wg.Add(P + 1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < N*P; i++ {
+			q.Put(int64(i + 1))
+		}
+	}()
+
+	errs := make(chan error)
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	for i := 0; i < P; i++ {
+		go func(p int) {
+			defer wg.Done()
+			var lastSeen int64
+			for i := 0; i < N; i++ {
+				var v *int64
+				if !q.Get(&v) {
+					errs <- fmt.Errorf("failed get")
+				}
+				//fmt.Println(p, v)
+				if *v <= lastSeen {
+					errs <- fmt.Errorf("got %v last seen %v on producer %v", v, lastSeen, p)
+				}
+				lastSeen = *v
+			}
+		}(i)
+	}
+
+	for err := range errs {
+		t.Fatal(err)
+	}
+}
+
+func TestXOneringMPSCBatch(t *testing.T) {
+	var q = New{2}.MPSC()
+	const P = 4
+	const C = 2
+	var wg sync.WaitGroup
+	wg.Add(P + 1)
+	for id := 0; id < P; id++ {
+		go func(id int) {
+			defer wg.Done()
+			for i := 0; i < C; i++ {
+				q.Put(int64(id<<32 | i))
+			}
+		}(id)
+	}
+
+	go func() {
+		defer wg.Done()
+		total := C * P
+		q.Consume(func(val *int64) {
+			total--
+			if total == 0 {
+				q.Close()
+			} else if total < 0 {
+				t.Fatal("invalid value")
+				q.Close()
+				return
+			}
+		})
+	}()
+	wg.Wait()
+}
 //
-//	var wg sync.WaitGroup
-//	wg.Add(P + 1)
-//	go func() {
-//		defer wg.Done()
-//		for i := 0; i < N*P; i++ {
-//			q.Put(int64(i + 1))
-//		}
-//	}()
-//
-//	errs := make(chan error)
-//	go func() {
-//		wg.Wait()
-//		close(errs)
-//	}()
-//
-//	for i := 0; i < P; i++ {
-//		go func(p int) {
-//			defer wg.Done()
-//			var lastSeen int64
-//			for i := 0; i < N; i++ {
-//				var v int64
-//				if !q.Get(&v) {
-//					errs <- fmt.Errorf("failed get")
-//				}
-//				//fmt.Println(p, v)
-//				if v <= lastSeen {
-//					errs <- fmt.Errorf("got %v last seen %v on producer %v", v, lastSeen, p)
-//				}
-//				lastSeen = v
-//			}
-//		}(i)
-//	}
-//
-//	for err := range errs {
-//		t.Fatal(err)
-//	}
-//}
-//
-//func TestXOneringMPSCBatch(t *testing.T) {
-//	var q MPSC
-//	q.init(Pointer,2)
-//	const P = 4
-//	const C = 2
-//	var wg sync.WaitGroup
-//	wg.Add(P + 1)
-//	for id := 0; id < P; id++ {
-//		go func(id int) {
-//			defer wg.Done()
-//			for i := 0; i < C; i++ {
-//				q.Put(int64(id<<32 | i))
-//			}
-//		}(id)
-//	}
-//
-//	go func() {
-//		defer wg.Done()
-//		total := C * P
-//		q.Consume(func(val int64) {
-//			total--
-//			if total == 0 {
-//				q.Close()
-//			} else if total < 0 {
-//				t.Fatal("invalid value")
-//				q.Close()
-//				return
-//			}
-//		})
-//	}()
-//	wg.Wait()
-//}
-//
-//func TestRingMPMC_Get(t *testing.T) {
-//	var ring MPMC
-//	ring.init(Pointer,4)
-//	var wg sync.WaitGroup
-//	//pp := runtime.GOMAXPROCS(8)
-//	var producers = 4
-//	wg.Add(producers * 2)
-//	var N = 1000
-//	for p := 0; p < producers; p++ {
-//		go func(p int) {
-//			runtime.LockOSThread()
-//			for i := 0; i < N; i++ {
-//				ring.Put(int64(i))
-//			}
-//			wg.Done()
-//		}(p)
-//	}
-//	var ch = make(chan int64, N*producers)
-//	for p := 0; p < producers; p++ {
-//		go func(c int) {
-//			runtime.LockOSThread()
-//			var v int64
-//			var i = 0
-//			for ring.Get(&v) {
-//				i++
-//				ch <- v
-//				if i == N {
-//					break
-//				}
-//			}
-//			wg.Done()
-//		}(p)
-//	}
-//
-//	var m = map[int64]int{}
-//	for i := 0; i < N*4; i++ {
-//		v := <-ch
-//		m[v]++
-//	}
-//
-//	for k, v := range m {
-//		if v != producers {
-//			t.Fatalf("%v(%v) != 4: %v", k, v, m)
-//		}
-//	}
-//	fmt.Println("waiting")
-//	wg.Wait()
-//
-//	//runtime.GOMAXPROCS(pp)
-//}
+func TestRingMPMC_Get(t *testing.T) {
+	var numbers = mknumslice(1000)
+	var ring = New{Size:8192}.MPMC()
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 4
+	wg.Add(producers * 2)
+	var N = len(numbers)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			runtime.LockOSThread()
+			for i := 0; i < N; i++ {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+	var ch = make(chan int, N*producers)
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			runtime.LockOSThread()
+			var v *int
+			var i int
+			for ring.Get(&v) {
+				i++
+				ch <- *v
+				if i == N {
+					break
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+
+	var m = map[int]int{}
+	for i := 0; i < N*4; i++ {
+		v := <-ch
+		m[v]++
+	}
+
+	for k, v := range m {
+		if v != producers {
+			t.Fatalf("%v(%v) != 4: %v", k, v, m)
+		}
+	}
+	fmt.Println("waiting")
+	wg.Wait()
+
+	//runtime.GOMAXPROCS(pp)
+}
+
+
+func TestRingMPSC_Get(t *testing.T) {
+	var numbers = mknumslice(1000)
+	var ring = New{Size:8192}.MPSC()
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 50
+	wg.Add(producers+1)
+	var N = len(numbers) * producers
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			for i := range numbers {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+	var ch = make(chan int, N)
+	go func() {
+		runtime.LockOSThread()
+		var v *int
+		var i int
+		for ring.Get(&v) {
+			ch <- *v
+			if i++; i == N {
+				break
+			}
+		}
+		wg.Done()
+	}()
+
+	var m = map[int]int{}
+	for i := 0; i < N; i++ {
+		v := <-ch
+		m[v]++
+	}
+
+	for k, v := range m {
+		if v != producers {
+			t.Fatalf("%v(%v) != 4: %v", k, v, m)
+		}
+	}
+	wg.Wait()
+
+	//runtime.GOMAXPROCS(pp)
+}
