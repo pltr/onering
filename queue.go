@@ -1,20 +1,24 @@
 package onering
 
-// Consumer represents consuming queue
+/*
+Consumer represents consuming queue
 
-//  Get(**T) expects a pointer to a pointer and returns a boolean value informing if the read was successful
+	Get(**T) expects a pointer to a pointer and returns a boolean value informing if the read was successful
+	Consume(func(onering.Iter, *T)) expects a function with 2 arguments, onering.Iter and *T
 
-//  Consume(func(onering.Iter, *T)) expects a function with 2 arguments, onering.Iter and *T
+*/
 type Consumer interface {
 	Get(interface{}) bool
 	Consume(interface{})
 }
 
-// Producer represents producing queue
+/*
+Producer represents producing queue
 
-//  Put(T) will accept anything, but it's strongly recommended to only call it with pointers to avoid heap allocation
+	Put(T) will accept anything, but it's strongly recommended to only call it with pointers to avoid heap allocation
+	Close() closes the queue
 
-//  Close() closes the queue
+*/
 type Producer interface {
 	Put(interface{})
 	Close()
