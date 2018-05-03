@@ -42,7 +42,7 @@ At the moment, all queues only support sending pointers (of any type). You can s
    }
 ```
 ### Single consumer batching case
-Batching consumption is strongly recommended in all cases, it's expected to have both higher throughput and lower latency
+Batching consumption is strongly recommended in all single consumer cases, it's expected to have both higher throughput and lower latency
 
 ```go
     import "github.com/pltr/onering"
