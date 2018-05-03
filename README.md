@@ -49,26 +49,26 @@ Batching consumption is strongly recommended in all single consumer cases, it's 
 
 ```go
     import "github.com/pltr/onering"
-	var queue = onering.New{Size: 8192}.SPSC()
+    var queue = onering.New{Size: 8192}.SPSC()
 
-	var src = int64(5)
-	queue.Put(&src)
-	queue.Put(6) // WARNING: this will allocate memory on the heap and copy the value into it
-	queue.Close()
+    var src = int64(5)
+    queue.Put(&src)
+    queue.Put(6) // WARNING: this will allocate memory on the heap and copy the value into it
+    queue.Close()
 
-	queue.Consume(func(it onering.Iter, dst *int64) {
-		if *dst != src {
-			panic("i don't know what's going on")
-		}
-		it.Stop()
-	})
-	// still one element left in the queue
-	var dst *int64
-	// Get will always expect a pointer to a pointer
-	if !queue.Get(&dst) || *dst != 6 {
-		panic("uh oh")
-	}
-	fmt.Println("Yay, batching works")
+    queue.Consume(func(it onering.Iter, dst *int64) {
+        if *dst != src {
+            panic("i don't know what's going on")
+        }
+        it.Stop()
+    })
+    // still one element left in the queue
+    var dst *int64
+    // Get will always expect a pointer to a pointer
+    if !queue.Get(&dst) || *dst != 6 {
+        panic("uh oh")
+    }
+    fmt.Println("Yay, batching works")
 ```
 You can run both examples by `go run cmd/examples.go`
 
