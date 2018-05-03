@@ -41,7 +41,7 @@ type Iter interface {
 // New is a configuration structure for the queue constructor
 type New struct {
 	// Size (Capacity) of the queue
-	Size     uint32
+	Size uint32
 	// Maximum number of batched messages
 	MaxBatch int32
 }
@@ -95,8 +95,6 @@ func (n *New) BatchSize() int64 {
 //	Try(interface{}) bool
 //	Use(interface{}) bool
 //}
-
-
 
 type iter struct {
 	count int

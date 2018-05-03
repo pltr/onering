@@ -260,7 +260,7 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingMPMC_Get(b *testing.B) {
+func BenchmarkRingMPMC_GetMany(b *testing.B) {
 	var ring = New{Size: 8192}.MPMC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)

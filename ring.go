@@ -37,6 +37,13 @@ func (r *ring) wait() {
 	runtime.Gosched()
 }
 
+func (r *ring) waitForEq(data *int64, val int64) (keep bool) {
+	for keep = true; keep && atomic.LoadInt64(data) != val; runtime.Gosched() {
+		keep = !r.Done()
+	}
+	return
+}
+
 type multi struct {
 	ring
 	seq []int64
