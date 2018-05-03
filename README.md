@@ -1,10 +1,87 @@
-## One Ring to Queue Them All
+# One Ring to Queue Them All
 
-Well, no, it's not really just one ring, but a collection of lock-free (WFPO, even) ring buffers for different scenarios, so it's even better!
+Well, no, it's not really just one ring, but a collection of lock-free (starvation/wait free even) ring buffers for different scenarios, so it's even better!
 These queues don't use CAS operations to make them suitable for low latency/real-time environments and as a side effect of that,
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64bit of random numbers for each.
 
-Microbenchmarks are *everything*, the most important thing in the universe.
+
+## Description
+
+The package contains 4 related but different implementations
+1. SPSC - Single Producer/Single Consumer - For cases when you just need to send messages from one thread/goroutine to another
+2. MPSC - Multi-Producer/Single Consumer - When you need to send messages from many threads/goroutines into a single receiver
+3. SPMC - Single Producer/Multi-Consumer - When you need to distribute messages from a single thread to many others
+4. MPMC - Multi-Producer/Multi-Consumer - Many-to-Many
+
+
+At the moment, all queues only support sending pointers (of any type). You can send non pointer types, but it will cause heap allocation. But you *can not* receive anything but pointers, don't even try, it will blow up.
+
+
+## How to use it
+
+### Common interface
+    var queeue = onering.New{Size: N}.QueueType()
+    queue.Put(*T)
+    queue.Get(**T)
+    queue.Consume(fn(*T))
+
+### Simplest case
+```go
+   import "github.com/pltr/onering"
+   var queue = onering.New{Size: 8192}.MPMC()
+
+   var src = int64(5)
+   queue.Put(&src)
+   queue.Close()
+   var dst *int64
+   // .Get expects a pointer to a pointer
+   for queue.Get(&dst) {
+       if *dst != src {
+           panic("i don't know what's going on")
+       }
+   }
+```
+### Single consumer batching case
+Batching consumption is strongly recommended in all single consumer cases, it's expected to have both higher throughput and lower latency
+
+```go
+    import "github.com/pltr/onering"
+    var queue = onering.New{Size: 8192}.SPSC()
+
+    var src = int64(5)
+    queue.Put(&src)
+    queue.Close()
+
+    queue.Consume(func(dst *int64) {
+       if *dst != src {
+            panic("i don't know what's going on")
+       }
+    })
+```
+
+### Warnings
+Currently this is highly experimental, so be careful. It also uses some dirty tricks to get around go's typesystem.
+If you have a type mismatch between your sender and receiver or try to receive something unexpected, it will likely blow up.
+
+### FAQ
+
+* **Why four different implementations instead of just one (MPMC)?**
+    _There are optimizations to be made in each case. They can have tremendous effect on performance._
+
+* **Which one should I use?**
+    _If you're not sure, MPMC will likely to be the safest choice._
+
+* **I think I found a bug/something doesn't work as expectd**
+    _Feel free to open an issue_
+
+* **How fast is it?**
+    _I haven't seen any faster, especially when it comes to latency distribution_
+
+* **Did someone actually ask those questions above?**
+    _No_
+
+### Some benchmarks
+
 Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
@@ -40,8 +117,6 @@ Do note that batching methods in them *do not* increase latency but, in fact, do
 
 This is WIP, so the API is unstable at the moment - there are no guarantees about anything
 
-### TODO
- * Add producer batching
 
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)

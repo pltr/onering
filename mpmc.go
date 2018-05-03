@@ -10,8 +10,8 @@ type MPMC struct {
 	multi
 }
 
-func (r *MPMC) Init(size uint32) {
-	r.multi.Init(size)
+func (r *MPMC) init(size uint32) {
+	r.multi.init(size)
 	for i := range r.seq {
 		r.seq[i] = -int64(i)
 	}
@@ -19,7 +19,7 @@ func (r *MPMC) Init(size uint32) {
 	r.rp = r.size
 }
 
-func (r *MPMC) Get(i *int64) bool {
+func (r *MPMC) Get(i interface{}) bool {
 	var (
 		rp        = r.next(&r.rp)
 		data, seq = r.frame(rp)
@@ -29,12 +29,12 @@ func (r *MPMC) Get(i *int64) bool {
 			return false
 		}
 	}
-	*i = *data
+	inject(i, *data)
 	atomic.StoreInt64(seq, -rp)
 	return true
 }
 
-func (r *MPMC) Put(i int64) {
+func (r *MPMC) Put(i interface{}) {
 	var (
 		wp        = r.next(&r.wp)
 		data, seq = r.frame(wp)
@@ -43,6 +43,6 @@ func (r *MPMC) Put(i int64) {
 		r.wait()
 	}
 
-	*data = i
+	*data = extractptr(i)
 	atomic.StoreInt64(seq, wp)
 }

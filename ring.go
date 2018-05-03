@@ -4,10 +4,8 @@ import (
 	"math/bits"
 	"runtime"
 	"sync/atomic"
+	"unsafe"
 )
-
-const MaxBatch = 255 // has to be 2^N -1
-const spin = 512 - 1 // not used at the moment
 
 type ring struct {
 	_    [8]int64
@@ -15,13 +13,15 @@ type ring struct {
 	_    [7]int64
 	rp   int64
 	_    [7]int64
-	data []int64
+	data []unsafe.Pointer
+	size int64
 	mask int64
 	done int32
+
 }
 
-func (r *ring) Init(size uint32) {
-	r.data = make([]int64, 1<<uint32(32-bits.LeadingZeros32(size-1)))
+func (r *ring) init(size uint32) {
+	r.data = make([]unsafe.Pointer, 1<<uint(32-bits.LeadingZeros32(size-1)))
 	r.mask = int64(len(r.data) - 1)
 }
 
@@ -39,13 +39,12 @@ func (r *ring) wait() {
 
 type multi struct {
 	ring
-	size int64
 	seq  []int64
 	_    [50]byte
 }
 
-func (c *multi) Init(size uint32) {
-	c.ring.Init(size)
+func (c *multi) init(size uint32) {
+	c.ring.init(size)
 	c.size = int64(len(c.data))
 	c.seq = make([]int64, len(c.data))
 	c.wp = 1 // just to avoid 0-awkwardness with seq
@@ -56,7 +55,7 @@ func (c *multi) next(p *int64) int64 {
 	return atomic.AddInt64(p, 1) - 1
 }
 
-func (c *multi) frame(p int64) (data, seq *int64) {
+func (c *multi) frame(p int64) (data *unsafe.Pointer, seq *int64) {
 	var pos = c.mask & p
 	return &c.data[pos], &c.seq[pos]
 }

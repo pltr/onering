@@ -11,7 +11,7 @@ type SPSC struct {
 	_ [24]byte
 }
 
-func (r *SPSC) Get(i *int64) bool {
+func (r *SPSC) Get(i interface{}) bool {
 	var rp = r.rp
 	for rp >= atomic.LoadInt64(&r.wp) {
 		if r.Done() {
@@ -19,12 +19,13 @@ func (r *SPSC) Get(i *int64) bool {
 		}
 		r.wait()
 	}
-	*i = r.data[rp&r.mask]
+	inject(i, r.data[rp&r.mask])
 	atomic.StoreInt64(&r.rp, rp+1)
 	return true
 }
 
-func (r *SPSC) Consume(fn func(int64)) {
+func (r *SPSC) Consume(i interface{}) {
+	var fn = extractfn(i)
 	for {
 		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
 		for ; rp >= wp; r.wait() {
@@ -43,11 +44,20 @@ func (r *SPSC) Consume(fn func(int64)) {
 	}
 }
 
-func (r *SPSC) Put(i int64) {
+func (r *SPSC) Put(i interface{}) {
 	var wp = r.wp
 	for diff := wp - r.mask; diff >= atomic.LoadInt64(&r.rp); {
 		r.wait()
 	}
-	r.data[wp&r.mask] = i
+	r.data[wp&r.mask] = extractptr(i)
 	atomic.StoreInt64(&r.wp, wp+1)
 }
+
+
+type spscbatch struct {
+	ring *SPSC
+	offset int
+	rp int64
+	wp int64
+}
+
