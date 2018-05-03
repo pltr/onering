@@ -34,7 +34,7 @@ At the moment, all queues only support sending pointers (of any type). You can s
    queue.Put(&src)
    queue.Close()
    var dst *int64
-   // yes, .Get expects a pointer to a pointer
+   // .Get expects a pointer to a pointer
    for queue.Get(&dst) {
        if *dst != src {
            panic("i don't know what's going on")
