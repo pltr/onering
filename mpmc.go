@@ -10,8 +10,8 @@ type MPMC struct {
 	multi
 }
 
-func (r *MPMC) init(inj Injector, size uint32) {
-	r.multi.init(inj, size)
+func (r *MPMC) init(size uint32) {
+	r.multi.init(size)
 	for i := range r.seq {
 		r.seq[i] = -int64(i)
 	}
@@ -29,7 +29,7 @@ func (r *MPMC) Get(i interface{}) bool {
 			return false
 		}
 	}
-	r.inject(extractptr(i), data)
+	inject(i, *data)
 	atomic.StoreInt64(seq, -rp)
 	return true
 }

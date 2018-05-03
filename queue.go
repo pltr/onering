@@ -7,14 +7,31 @@ type Queue interface {
 	WriteTicket() Ticket
 }
 type New struct {
-	Type Injector
 	Size uint32
 }
 
-func (nq New) SPSC() *SPSC {
-	var q SPSC
-	q.init(nq.Type, nq)
-	return &q
+func (n New) SPSC() (spsc *SPSC) {
+	spsc = new(SPSC)
+	spsc.init(n.Size)
+	return
+}
+
+func (n New) MPSC() (mpsc *MPSC) {
+	mpsc = new(MPSC)
+	mpsc.init(n.Size)
+	return
+}
+
+func (n New) SPMC() (spmc *SPMC) {
+	spmc = new(SPMC)
+	spmc.init(n.Size)
+	return
+}
+
+func (n New) MPMC() (mpmc *MPMC) {
+	mpmc = new(MPMC)
+	mpmc.init(n.Size)
+	return
 }
 
 type Waiter interface {

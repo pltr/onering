@@ -7,7 +7,6 @@ import (
 	"unsafe"
 )
 
-
 type ring struct {
 	_    [8]int64
 	wp   int64
@@ -15,17 +14,15 @@ type ring struct {
 	rp   int64
 	_    [7]int64
 	data []unsafe.Pointer
-	inject Injector
 	size int64
 	mask int64
 	done int32
 
 }
 
-func (r *ring) init(injector Injector, size uint32) {
+func (r *ring) init(size uint32) {
 	r.data = make([]unsafe.Pointer, 1<<uint(32-bits.LeadingZeros32(size-1)))
 	r.mask = int64(len(r.data) - 1)
-	r.inject = injector
 }
 
 func (r *ring) Close() {
@@ -46,8 +43,8 @@ type multi struct {
 	_    [50]byte
 }
 
-func (c *multi) init(injector Injector, size uint32) {
-	c.ring.init(injector, size)
+func (c *multi) init(size uint32) {
+	c.ring.init(size)
 	c.size = int64(len(c.data))
 	c.seq = make([]int64, len(c.data))
 	c.wp = 1 // just to avoid 0-awkwardness with seq

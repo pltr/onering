@@ -1,8 +1,64 @@
-## One Ring to Queue Them All
+# One Ring to Queue Them All
 
 Well, no, it's not really just one ring, but a collection of lock-free (WFPO, even) ring buffers for different scenarios, so it's even better!
 These queues don't use CAS operations to make them suitable for low latency/real-time environments and as a side effect of that,
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64bit of random numbers for each.
+
+
+## Description
+
+The package contains 4 related but different implementations
+1. SPSC - Single Producer/Single Consumer - For cases when you just need to send messages from one thread/goroutine to another
+2. MPSC - Multi-Producer/Single Consumer - When you need to send messages from many threads/goroutines into a single receiver
+3. SPMC - Single Producer/Multi-Consumer - When you need to distribute messages from a single thread to many others
+4. MPMC - Multi-Producer/Multi-Consumer - Many-to-Many
+
+
+At the moment, all queues only support sending pointers (of any type). You can send non pointer types, but it will cause heap allocation. But you *can not* receive anything but pointers, don't even try, it will blow up.
+
+
+## How to use it
+
+### Simplest case
+```go
+   import "github.com/pltr/onering"
+   var queue = onering.New{Size: 8192}.MPMC()
+
+   var src = int64(5)
+   queue.Put(&src)
+   queue.Close()
+   var dst *int64
+   // yes, .Get expects a pointer to a pointer
+   for queue.Get(&dst) {
+       if *dst != src {
+           panic("i don't know what's going on")
+       }
+   }
+```
+### Single consumer batching case
+Batching consumption is strongly recommended in all cases, it has both higher throughput and lower latency
+
+```go
+    import "github.com/pltr/onering"
+    var queue = onering.New{Size: 8192}.SPSC()
+
+    var src = int64(5)
+    queue.Put(&src)
+    queue.Close()
+
+    queue.Consume(func(dst *int64) {
+       if *dst != src {
+            panic("i don't know what's going on")
+       }
+    })
+```
+
+### Warnings
+Currently this is highly experimental, so be careful. It also uses some dirty tricks to get around go's typesystem.
+If you have a type mismatch between your sender and receiver or try to receive something unexpected, it will likely blow up.
+
+
+### Some benchmarks
 
 Microbenchmarks are *everything*, the most important thing in the universe.
 Macbook pro 2.9 GHz Intel Core i7 (2017)

@@ -2,7 +2,6 @@ package onering
 
 import (
 	"sync/atomic"
-	"unsafe"
 )
 
 // WARNING: this will ONLY work in SPSC situations
@@ -20,12 +19,13 @@ func (r *SPSC) Get(i interface{}) bool {
 		}
 		r.wait()
 	}
-	r.inject(extractptr(i), r.data[rp&r.mask])
+	inject(i, r.data[rp&r.mask])
 	atomic.StoreInt64(&r.rp, rp+1)
 	return true
 }
 
-func (r *SPSC) Consume(fn func(pointer unsafe.Pointer)) {
+func (r *SPSC) Consume(i interface{}) {
+	var fn = extractfn(i)
 	for {
 		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
 		for ; rp >= wp; r.wait() {
@@ -61,10 +61,3 @@ type spscbatch struct {
 	wp int64
 }
 
-
-func splitbatches(rp, wp int64) (int64, int64) {
-	var total = wp - rp
-	var batches = total >> BatchExp
-	var rest = total & MaxBatch
-	return batches, rest
-}

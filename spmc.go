@@ -18,7 +18,7 @@ func (r *SPMC) Get(i interface{}) bool {
 			return false
 		}
 	}
-	r.inject(extractptr(i), data)
+	inject(i, *data)
 	atomic.StoreInt64(seq, -rp)
 	return true
 }
