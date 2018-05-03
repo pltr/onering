@@ -65,21 +65,21 @@ If you have a type mismatch between your sender and receiver or try to receive s
 
 ### FAQ
 
-* Why four different implementations instead of just one (MPMC)?
+* **Why four different implementations instead of just one (MPMC)?**
     _There are optimizations to be made in each case. They can have tremendous effect on performance._
 
-* Which one should I use?
+* **Which one should I use?**
     _If you're not sure, MPMC will likely to be the safest choice._
 
-* I think I found a bug/something doesn't work as expectd
+* **I think I found a bug/something doesn't work as expectd**
     _Feel free to open an issue_
 
-* How fast is it?
+* **How fast is it?**
     _I haven't seen any faster, especially when it comes to latency distribution_
 
-* Did someone actually ask those questions above?
+* **Did someone actually ask those questions above?**
     _No_
-    
+
 ### Some benchmarks
 
 Macbook pro 2.9 GHz Intel Core i7 (2017)
@@ -117,8 +117,6 @@ Do note that batching methods in them *do not* increase latency but, in fact, do
 
 This is WIP, so the API is unstable at the moment - there are no guarantees about anything
 
-### TODO
- * Add producer batching
 
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)
