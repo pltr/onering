@@ -48,6 +48,37 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 
 }
 
+func BenchmarkRingSPSC_GetNolock(b *testing.B) {
+	var ring = New{8192}.SPSC()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	type T struct {
+		i int
+	}
+	pp := runtime.GOMAXPROCS(1)
+	var v = T{5}
+	b.ResetTimer()
+	go func(n int) {
+		for i := 0; i < b.N; i++ {
+			ring.Put(&v)
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
+
+	go func(n int) {
+		var v *T
+		for i := 0; ring.Get(&v); i++ {
+			_ = *v
+		}
+		wg.Done()
+	}(b.N)
+
+	wg.Wait()
+	runtime.GOMAXPROCS(pp)
+
+}
+
 func BenchmarkRingSPSC_Consume(b *testing.B) {
 	var numbers = mknumslice(b.N)
 	var ring = New{Size: 8192}.SPSC()
