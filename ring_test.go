@@ -444,8 +444,8 @@ func TestRingMPMC_Get(t *testing.T) {
 
 
 func TestRingMPSC_Get(t *testing.T) {
-	var numbers = mknumslice(1000)
-	var ring = New{Size:8192}.MPSC()
+	var numbers = mknumslice(100)
+	var ring = New{Size:128}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 50
@@ -454,7 +454,7 @@ func TestRingMPSC_Get(t *testing.T) {
 	for p := 0; p < producers; p++ {
 		go func(p int) {
 			for i := range numbers {
-				ring.Put(&numbers[i])
+				ring.Put(i)
 			}
 			wg.Done()
 		}(p)

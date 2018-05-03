@@ -40,12 +40,12 @@ func (r *MPSC) Consume(i interface{}) {
 			var data, seq = r.frame(rp)
 			if i++; atomic.LoadInt64(seq) <= 0 || i&MaxBatch == 0 {
 				atomic.StoreInt64(&r.rp, rp)
-				for atomic.LoadInt64(seq) == 0 {
+				for atomic.LoadInt64(seq) <= 0 {
 					r.wait()
 				}
 			}
-			fn(atomic.LoadPointer(data))
-			atomic.StoreInt64(seq, -rp)
+			fn(*data)
+			*seq = -rp
 		}
 		atomic.StoreInt64(&r.rp, wp)
 	}
@@ -57,6 +57,6 @@ func (r *MPSC) Put(i interface{}) {
 		r.wait()
 	}
 	var pos = wp & r.mask
-	atomic.StorePointer(&r.data[pos], extractptr(i))
+	r.data[pos] = extractptr(i)
 	atomic.StoreInt64(&r.seq[pos], wp)
 }
