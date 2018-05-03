@@ -86,7 +86,7 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_Get-8         	    100000000	        59.6 ns/op
+    BenchmarkRingSPSC_Get-8             	100000000	        59.7 ns/op
     BenchmarkRingSPSC_GetNolock-8       	200000000	        20.8 ns/op
     BenchmarkRingSPSC_Consume-8         	300000000	        12.8 ns/op
     BenchmarkRingSPMC-8                 	100000000	        41.4 ns/op
@@ -109,8 +109,10 @@ Go channels:
     BenchmarkChan/SPMC-8                	10000000	       340 ns/op
     BenchmarkChan/SPMC_NoLock-8         	100000000	        46.3 ns/op
 
-Generally a 2-10x increase in performance, especially if you take advantage of batching and/or use multicore setup.
+"NoLock" tests are tests without pinning goroutines via `runtime.LockOSThread()` - has nothing to do with mutexes or some such.
+You can generally expect a 2-10x increase in performance, especially if you take advantage of batching and/or use a heavy multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
+Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution:
 
     BenchmarkResponseTimesRing-8
 
@@ -124,7 +126,6 @@ Do note that batching methods in them *do not* increase latency but, in fact, do
     [Sample size: 2048 messages] 50: 163ns	75: 222ns	90: 266ns	99: 317ns	99.9: 393ns	99.99: 448ns	99.999: 459ns	99.9999: 459ns
 
 This is WIP, so the API is unstable at the moment - there are no guarantees about anything
-
 
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)
