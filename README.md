@@ -4,6 +4,8 @@ Well, no, it's not really just one ring, but a collection of lock-free (starvati
 These queues don't use CAS operations to make them suitable for low latency/real-time environments and as a side effect of that,
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64bit of random numbers for each.
 
+A couple of things in it were inspired by the very cool LMAX Disruptor, so thanks @mjpt777!
+It's not anywhere near as intrusive and opinionated as Disruptor though. It's not a framework and its main goal is to be (very) simple.
 
 ## Description
 
