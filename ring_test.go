@@ -110,6 +110,7 @@ func BenchmarkRingSPSC_Consume(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
+
 func BenchmarkRingSPMC(b *testing.B) {
 	var numbers = mknumslice(b.N)
 	var ring = New{Size:8192}.SPMC()
@@ -138,7 +139,34 @@ func BenchmarkRingSPMC(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingMPSC_Get(b *testing.B) {
+func BenchmarkRingSPMC_NoLock1CPU(b *testing.B) {
+	var numbers = mknumslice(b.N)
+	var ring = New{Size:8192}.SPMC()
+	var wg sync.WaitGroup
+	var readers = MULTI
+	wg.Add(readers + 1)
+	pp := runtime.GOMAXPROCS(1)
+	for c := 0; c < readers; c++ {
+		go func(c int) {
+			var v *int64
+			for ring.Get(&v) {
+				_ = *v
+			}
+			wg.Done()
+		}(c)
+	}
+	go func(n int) {
+		for i := range numbers {
+			ring.Put(&numbers[i])
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
+	wg.Wait()
+	runtime.GOMAXPROCS(pp)
+}
+
+func BenchmarkRingMPSC_GetLocked(b *testing.B) {
 	var ring = New{Size:8192}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
@@ -169,6 +197,38 @@ func BenchmarkRingMPSC_Get(b *testing.B) {
 	wg.Wait()
 	//runtime.GOMAXPROCS(pp)
 }
+
+func BenchmarkRingMPSC_GetNoLock1CPU(b *testing.B) {
+	var ring = New{Size:8192}.MPSC()
+	var wg sync.WaitGroup
+	pp := runtime.GOMAXPROCS(1)
+	var producers = MULTI
+	wg.Add(producers + 1)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			var total = b.N/producers + 1
+			var numbers = mknumslice(total)
+			for i := range numbers {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+	go func(n int) {
+		var v *int
+		for ring.Get(&v) {
+			n--
+			if n <= 0 {
+				ring.Close()
+			}
+		}
+		wg.Done()
+	}(b.N)
+
+	wg.Wait()
+	runtime.GOMAXPROCS(pp)
+}
+
 //
 func BenchmarkRingMPSC_Batch(b *testing.B) {
 	var ring = New{Size:8192}.MPSC()
@@ -235,6 +295,40 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
+func BenchmarkRingMPMC_Get1CPU(b *testing.B) {
+	var ring = New{Size:8192}.MPMC()
+	var wg sync.WaitGroup
+	pp := runtime.GOMAXPROCS(1)
+	var producers = 50
+	wg.Add(producers * 2)
+	//var total = int32(b.N)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			var size = b.N/producers + 1
+			var numbers = mknumslice(size)
+			for i := range numbers {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			var v int64
+			var total = b.N/producers + 1
+			for i := 0; ring.Get(&v); {
+				if i++; i == total {
+					break
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+	runtime.GOMAXPROCS(pp)
+}
+
 func BenchmarkChanMPMC(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
@@ -266,11 +360,13 @@ func BenchmarkChanMPMC(b *testing.B) {
 }
 
 func BenchmarkChan(b *testing.B) {
+
 	b.Run("SPSC", func(b *testing.B) {
 		q := make(chan int64, 8192)
 
 		var wg sync.WaitGroup
 		wg.Add(2)
+
 		b.ResetTimer()
 		go func(n int) {
 			runtime.LockOSThread()
@@ -291,61 +387,133 @@ func BenchmarkChan(b *testing.B) {
 		wg.Wait()
 	})
 
-	for i := 64; i <= 64; i <<= 1 {
-		producers := i
-		b.Run(fmt.Sprintf("SPMC-%d", producers), func(b *testing.B) {
-			single := b.N/producers + 1
-			total := single * producers
-			q := make(chan int64, 8192)
-			var wg sync.WaitGroup
-			wg.Add(producers + 1)
-			b.ResetTimer()
-			for p := 0; p < producers; p++ {
-				go func(n int) {
-					for i := 0; i < single; i++ {
-						<-q
-					}
-					wg.Done()
-				}(b.N)
-			}
-			go func(n int) {
-				runtime.LockOSThread()
-				for i := 0; i < total; i++ {
-					q <- int64(i)
-				}
-				wg.Done()
-			}(b.N)
-			wg.Wait()
-		})
-	}
+	b.Run("SPSC_NoLock1CPU", func(b *testing.B) {
+		q := make(chan int64, 8192)
 
-	for i := 64; i <= 64; i <<= 1 {
-		producers := i
-		b.Run(fmt.Sprintf("MPSC-%d", producers), func(b *testing.B) {
-			single := b.N/producers + 1
-			total := single * producers
-			q := make(chan int64, 8192)
-			var wg sync.WaitGroup
-			wg.Add(producers + 1)
-			b.ResetTimer()
-			for p := 0; p < producers; p++ {
-				go func(n int) {
-					for i := 0; i < single; i++ {
-						q <- int64(i)
-					}
-					wg.Done()
-				}(b.N)
+		var wg sync.WaitGroup
+		wg.Add(2)
+		pp := runtime.GOMAXPROCS(1)
+		b.ResetTimer()
+		go func(n int) {
+			for i := 0; i < n; i++ {
+				q <- int64(i)
 			}
+			wg.Done()
+		}(b.N)
+
+		go func(n int) {
+			for i := 0; i < n; i++ {
+				<-q
+			}
+			wg.Done()
+		}(b.N)
+
+		wg.Wait()
+		runtime.GOMAXPROCS(pp)
+
+	})
+
+	producers := 100
+	b.Run("SPMC_Locked", func(b *testing.B) {
+		single := b.N/producers + 1
+		total := single * producers
+		q := make(chan int64, 8192)
+		var wg sync.WaitGroup
+		wg.Add(producers + 1)
+		b.ResetTimer()
+		for p := 0; p < producers; p++ {
 			go func(n int) {
-				runtime.LockOSThread()
-				for i := 0; i < total; i++ {
+				for i := 0; i < single; i++ {
 					<-q
 				}
 				wg.Done()
 			}(b.N)
-			wg.Wait()
-		})
-	}
+		}
+		go func(n int) {
+			runtime.LockOSThread()
+			for i := 0; i < total; i++ {
+				q <- int64(i)
+			}
+			wg.Done()
+		}(b.N)
+		wg.Wait()
+	})
+
+	b.Run("SPSC_NoLock", func(b *testing.B) {
+		single := b.N/producers + 1
+		total := single * producers
+		q := make(chan int64, 8192)
+		var wg sync.WaitGroup
+		wg.Add(producers + 1)
+		pp := runtime.GOMAXPROCS(1)
+		b.ResetTimer()
+		for p := 0; p < producers; p++ {
+			go func(n int) {
+				for i := 0; i < single; i++ {
+					<-q
+				}
+				wg.Done()
+			}(b.N)
+		}
+		go func(n int) {
+			for i := 0; i < total; i++ {
+				q <- int64(i)
+			}
+			wg.Done()
+		}(b.N)
+		wg.Wait()
+		runtime.GOMAXPROCS(pp)
+	})
+
+	b.Run("SPMC", func(b *testing.B) {
+		single := b.N/producers + 1
+		total := single * producers
+		q := make(chan int64, 8192)
+		var wg sync.WaitGroup
+		wg.Add(producers + 1)
+		b.ResetTimer()
+		for p := 0; p < producers; p++ {
+			go func(n int) {
+				for i := 0; i < single; i++ {
+					q <- int64(i)
+				}
+				wg.Done()
+			}(b.N)
+		}
+		go func(n int) {
+			runtime.LockOSThread()
+			for i := 0; i < total; i++ {
+				<-q
+			}
+			wg.Done()
+		}(b.N)
+		wg.Wait()
+	})
+	b.Run("SPMC_NoLock", func(b *testing.B) {
+		single := b.N/producers + 1
+		total := single * producers
+		q := make(chan int64, 8192)
+		var wg sync.WaitGroup
+		wg.Add(producers + 1)
+		pp := runtime.GOMAXPROCS(1)
+		b.ResetTimer()
+		for p := 0; p < producers; p++ {
+			go func(n int) {
+				for i := 0; i < single; i++ {
+					q <- int64(i)
+				}
+				wg.Done()
+			}(b.N)
+		}
+		go func(n int) {
+			for i := 0; i < total; i++ {
+				<-q
+			}
+			wg.Done()
+		}(b.N)
+		wg.Wait()
+		runtime.GOMAXPROCS(pp)
+	})
 }
 
 //// courtesy or Egon Elbre

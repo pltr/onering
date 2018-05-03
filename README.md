@@ -86,23 +86,30 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_Get-8           	100000000	        56.5 ns/op
-    BenchmarkRingSPSC_GetNolock-8   	100000000	        20.6 ns/op
-    BenchmarkRingSPSC_Batch-8         	300000000	        12.7 ns/op
-    BenchmarkRingSPMC-8               	100000000	        39.3 ns/op
-    BenchmarkRingMPSC_Get-8           	100000000	        57.2 ns/op
-    BenchmarkRingMPSC_Batch-8         	200000000	        24.4 ns/op
-    BenchmarkRingMPMC_Get-8           	100000000	        45.6 ns/op
+    BenchmarkRingSPSC_Get-8         	    100000000	        59.6 ns/op
+    BenchmarkRingSPSC_GetNolock-8       	200000000	        20.8 ns/op
+    BenchmarkRingSPSC_Consume-8         	300000000	        12.8 ns/op
+    BenchmarkRingSPMC-8                 	100000000	        41.4 ns/op
+    BenchmarkRingSPMC_NoLock1CPU-8      	200000000	        24.2 ns/op
+    BenchmarkRingMPSC_GetLocked-8       	100000000	        58.6 ns/op
+    BenchmarkRingMPSC_GetNoLock1CPU-8   	200000000	        27.2 ns/op
+    BenchmarkRingMPSC_Batch-8           	200000000	        28.9 ns/op
+    BenchmarkRingMPMC_Get-8             	100000000	        46.4 ns/op
+    BenchmarkRingMPMC_Get1CPU-8         	100000000	        30.1 ns/op
+
 
 
 Go channels:
 
-    BenchmarkChanMPMC-8               	50000000	        82.2 ns/op
-    BenchmarkChan/SPSC-8              	100000000	        55.1 ns/op
-    BenchmarkChan/SPMC-64-8           	10000000	       307 ns/op
-    BenchmarkChan/MPSC-64-8           	10000000	       358 ns/op
+    BenchmarkChanMPMC-8                 	50000000	        83.3 ns/op
+    BenchmarkChan/SPSC-8                	100000000	        54.8 ns/op
+    BenchmarkChan/SPSC_NoLock1CPU-8     	100000000	        45.6 ns/op
+    BenchmarkChan/SPMC_Locked-8         	10000000	       356 ns/op
+    BenchmarkChan/SPSC_NoLock-8         	100000000	        46.2 ns/op
+    BenchmarkChan/SPMC-8                	10000000	       340 ns/op
+    BenchmarkChan/SPMC_NoLock-8         	100000000	        46.3 ns/op
 
-Generally a 2-10x increase in performance, especially if you take advantage of batching.
+Generally a 2-10x increase in performance, especially if you take advantage of batching and/or use multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
     BenchmarkResponseTimesRing-8
