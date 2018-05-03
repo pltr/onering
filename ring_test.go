@@ -240,7 +240,7 @@ func BenchmarkChan(b *testing.B) {
 
 		var wg sync.WaitGroup
 		wg.Add(2)
-
+		b.ResetTimer()
 		go func(n int) {
 			runtime.LockOSThread()
 			for i := 0; i < n; i++ {
@@ -268,6 +268,7 @@ func BenchmarkChan(b *testing.B) {
 			q := make(chan int64, 8192)
 			var wg sync.WaitGroup
 			wg.Add(producers + 1)
+			b.ResetTimer()
 			for p := 0; p < producers; p++ {
 				go func(n int) {
 					for i := 0; i < single; i++ {
@@ -295,6 +296,7 @@ func BenchmarkChan(b *testing.B) {
 			q := make(chan int64, 8192)
 			var wg sync.WaitGroup
 			wg.Add(producers + 1)
+			b.ResetTimer()
 			for p := 0; p < producers; p++ {
 				go func(n int) {
 					for i := 0; i < single; i++ {
