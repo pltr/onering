@@ -4,9 +4,11 @@ package onering
 Consumer represents consuming queue
 */
 type Consumer interface {
-	// Get(**T) expects a pointer to a pointer and returns a boolean value informing if the read was successful
+	// Get(**T) expects a pointer to a pointer and returns a boolean value
+	// signalling if the read was successful
 	Get(interface{}) bool
-	// Consume(func(onering.Iter, *T)) expects a function with 2 arguments, onering.Iter and *T
+	// Consume(func(onering.Iter, *T)) expects a function with 2 arguments:
+	// onering.Iter and *T
 	Consume(interface{})
 }
 
@@ -17,8 +19,8 @@ type Producer interface {
 	// Put(T) will accept anything, but it's strongly recommended
 	// to only call it with pointers to avoid heap allocation
 	Put(interface{})
-	// Close() closes the queue.
-	// The actual consumption will only stop after all pending messages have been consumed.
+	// Close() closes the queue. The actual consumption will only stop after
+	// all pending messages have been consumed.
 	Close()
 }
 
@@ -30,7 +32,7 @@ type Queue interface {
 
 // Iter is a generic loop interface
 type Iter interface {
-	// stops consuming function
+	// Stops the consuming function
 	Stop()
 	// returns the current iteration count
 	Count() int
