@@ -44,8 +44,8 @@ func (r *MPSC) Consume(i interface{}) {
 					r.wait()
 				}
 			}
-			fn(*data)
-			*seq = -rp
+			fn(atomic.LoadPointer(data))
+			atomic.StoreInt64(seq, -rp)
 		}
 		atomic.StoreInt64(&r.rp, wp)
 	}
@@ -57,6 +57,6 @@ func (r *MPSC) Put(i interface{}) {
 		r.wait()
 	}
 	var pos = wp & r.mask
-	r.data[pos] = extractptr(i)
+	atomic.StorePointer(&r.data[pos], extractptr(i))
 	atomic.StoreInt64(&r.seq[pos], wp)
 }
