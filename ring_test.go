@@ -1,10 +1,10 @@
 package onering
 
 import (
+	"fmt"
 	"runtime"
 	"sync"
 	"testing"
-	"fmt"
 )
 
 const MULTI = 100
@@ -18,7 +18,7 @@ func mknumslice(n int) []int {
 }
 
 func BenchmarkRingSPSC_Get(b *testing.B) {
-	var ring = New{8192}.SPSC()
+	var ring = New{Size: 8192}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	type T struct {
@@ -49,7 +49,7 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 }
 
 func BenchmarkRingSPSC_GetNolock(b *testing.B) {
-	var ring = New{8192}.SPSC()
+	var ring = New{Size: 8192}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	type T struct {
@@ -97,7 +97,7 @@ func BenchmarkRingSPSC_Consume(b *testing.B) {
 	go func(n int) {
 		runtime.LockOSThread()
 		var i int
-		ring.Consume(func(v *int) {
+		ring.Consume(func(it Iter, v *int) {
 			if *v != i {
 				b.Fatalf("Expected %d got %d", i, v)
 			}
@@ -110,10 +110,9 @@ func BenchmarkRingSPSC_Consume(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-
-func BenchmarkRingSPMC(b *testing.B) {
+func BenchmarkRingSPMC_LockThread(b *testing.B) {
 	var numbers = mknumslice(b.N)
-	var ring = New{Size:8192}.SPMC()
+	var ring = New{Size: 8192}.SPMC()
 	var wg sync.WaitGroup
 	var readers = MULTI
 	wg.Add(readers + 1)
@@ -141,7 +140,7 @@ func BenchmarkRingSPMC(b *testing.B) {
 
 func BenchmarkRingSPMC_NoLock1CPU(b *testing.B) {
 	var numbers = mknumslice(b.N)
-	var ring = New{Size:8192}.SPMC()
+	var ring = New{Size: 8192}.SPMC()
 	var wg sync.WaitGroup
 	var readers = MULTI
 	wg.Add(readers + 1)
@@ -167,7 +166,7 @@ func BenchmarkRingSPMC_NoLock1CPU(b *testing.B) {
 }
 
 func BenchmarkRingMPSC_GetLocked(b *testing.B) {
-	var ring = New{Size:8192}.MPSC()
+	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = MULTI
@@ -199,7 +198,7 @@ func BenchmarkRingMPSC_GetLocked(b *testing.B) {
 }
 
 func BenchmarkRingMPSC_GetNoLock1CPU(b *testing.B) {
-	var ring = New{Size:8192}.MPSC()
+	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	pp := runtime.GOMAXPROCS(1)
 	var producers = MULTI
@@ -231,7 +230,7 @@ func BenchmarkRingMPSC_GetNoLock1CPU(b *testing.B) {
 
 //
 func BenchmarkRingMPSC_Batch(b *testing.B) {
-	var ring = New{Size:8192}.MPSC()
+	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = MULTI
@@ -248,10 +247,10 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 	}
 	go func(n int) {
 		runtime.LockOSThread()
-		ring.Consume(func(i *int) {
+		ring.Consume(func(it Iter, i *int) {
 			n--
 			if n <= 0 {
-				ring.Close()
+				it.Stop()
 			}
 		})
 		wg.Done()
@@ -262,7 +261,7 @@ func BenchmarkRingMPSC_Batch(b *testing.B) {
 }
 
 func BenchmarkRingMPMC_Get(b *testing.B) {
-	var ring = New{Size:8192}.MPMC()
+	var ring = New{Size: 8192}.MPMC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 50
@@ -295,8 +294,42 @@ func BenchmarkRingMPMC_Get(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
+func BenchmarkRingMPMC_Consume(b *testing.B) {
+	var ring = New{Size: 8192}.MPMC()
+	var wg sync.WaitGroup
+	//pp := runtime.GOMAXPROCS(8)
+	var producers = 50
+	wg.Add(producers * 2)
+	//var total = int32(b.N)
+	for p := 0; p < producers; p++ {
+		go func(p int) {
+			var size = b.N/producers + 1
+			var numbers = mknumslice(size)
+			for i := range numbers {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+
+	for p := 0; p < producers; p++ {
+		go func(c int) {
+			var total = b.N/producers + 1
+			var i = 0
+			ring.Consume(func(it Iter, v *int) {
+				if i++; i == total {
+					it.Stop()
+				}
+			})
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+	//runtime.GOMAXPROCS(pp)
+}
+
 func BenchmarkRingMPMC_Get1CPU(b *testing.B) {
-	var ring = New{Size:8192}.MPMC()
+	var ring = New{Size: 8192}.MPMC()
 	var wg sync.WaitGroup
 	pp := runtime.GOMAXPROCS(1)
 	var producers = 50
@@ -520,7 +553,7 @@ func BenchmarkChan(b *testing.B) {
 func TestXOneringSPMC(t *testing.T) {
 	const P = 4
 	const N = 100
-	var q = New{4}.SPMC()
+	var q = New{Size: 4}.SPMC()
 
 	var wg sync.WaitGroup
 	wg.Add(P + 1)
@@ -561,7 +594,7 @@ func TestXOneringSPMC(t *testing.T) {
 }
 
 func TestXOneringMPSCBatch(t *testing.T) {
-	var q = New{2}.MPSC()
+	var q = New{Size: 2}.MPSC()
 	const P = 4
 	const C = 2
 	var wg sync.WaitGroup
@@ -578,7 +611,7 @@ func TestXOneringMPSCBatch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		total := C * P
-		q.Consume(func(val *int64) {
+		q.Consume(func(it Iter, val *int64) {
 			total--
 			if total == 0 {
 				q.Close()
@@ -591,10 +624,11 @@ func TestXOneringMPSCBatch(t *testing.T) {
 	}()
 	wg.Wait()
 }
+
 //
 func TestRingMPMC_Get(t *testing.T) {
 	var numbers = mknumslice(1000)
-	var ring = New{Size:8192}.MPMC()
+	var ring = New{Size: 8192}.MPMC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 4
@@ -643,14 +677,13 @@ func TestRingMPMC_Get(t *testing.T) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-
 func TestRingMPSC_Get(t *testing.T) {
 	var numbers = mknumslice(100)
-	var ring = New{Size:128}.MPSC()
+	var ring = New{Size: 128}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
 	var producers = 50
-	wg.Add(producers+1)
+	wg.Add(producers + 1)
 	var N = len(numbers) * producers
 	for p := 0; p < producers; p++ {
 		go func(p int) {

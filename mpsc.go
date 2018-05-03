@@ -26,8 +26,12 @@ func (r *MPSC) Get(i interface{}) bool {
 }
 
 func (r *MPSC) Consume(i interface{}) {
-	var fn = extractfn(i)
-	for {
+	var (
+		fn       = extractfn(i)
+		maxbatch = int(r.maxbatch)
+		it       iter
+	)
+	for keep := true; keep; {
 		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
 		for ; rp >= wp; r.wait() {
 			if r.Done() {
@@ -36,18 +40,20 @@ func (r *MPSC) Consume(i interface{}) {
 			wp = atomic.LoadInt64(&r.wp)
 		}
 
-		for i := 0; rp < wp; rp++ {
+		for i := 0; rp < wp && keep; it.inc() {
 			var data, seq = r.frame(rp)
-			if i++; atomic.LoadInt64(seq) <= 0 || i&MaxBatch == 0 {
+			if i++; atomic.LoadInt64(seq) <= 0 || i&maxbatch == 0 {
 				atomic.StoreInt64(&r.rp, rp)
 				for atomic.LoadInt64(seq) <= 0 {
 					r.wait()
 				}
 			}
-			fn(*data)
+			fn(&it, *data)
 			*seq = -rp
+			keep = !it.stop
+			rp++
 		}
-		atomic.StoreInt64(&r.rp, wp)
+		atomic.StoreInt64(&r.rp, rp)
 	}
 }
 

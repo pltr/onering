@@ -2,6 +2,7 @@ package onering
 
 import (
 	"sync/atomic"
+	"unsafe"
 )
 
 type SPMC struct {
@@ -21,6 +22,17 @@ func (r *SPMC) Get(i interface{}) bool {
 	inject(i, *data)
 	atomic.StoreInt64(seq, -rp)
 	return true
+}
+
+func (r *SPMC) Consume(i interface{}) {
+	var (
+		fn  = extractfn(i)
+		ptr unsafe.Pointer
+		it  iter
+	)
+	for ; !it.stop && r.Get(&ptr); it.inc() {
+		fn(&it, ptr)
+	}
 }
 
 func (r *SPMC) Put(i interface{}) {

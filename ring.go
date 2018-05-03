@@ -8,16 +8,16 @@ import (
 )
 
 type ring struct {
-	_    [8]int64
-	wp   int64
-	_    [7]int64
-	rp   int64
-	_    [7]int64
-	data []unsafe.Pointer
-	size int64
-	mask int64
-	done int32
-
+	_        [8]int64
+	wp       int64
+	_        [7]int64
+	rp       int64
+	_        [7]int64
+	data     []unsafe.Pointer
+	size     int64
+	mask     int64
+	maxbatch int64
+	done     int32
 }
 
 func (r *ring) init(size uint32) {
@@ -26,7 +26,7 @@ func (r *ring) init(size uint32) {
 }
 
 func (r *ring) Close() {
-	atomic.StoreInt32(&r.done, 1)
+	atomic.AddInt32(&r.done, 1)
 }
 
 func (r *ring) Done() bool {
@@ -39,8 +39,8 @@ func (r *ring) wait() {
 
 type multi struct {
 	ring
-	seq  []int64
-	_    [50]byte
+	seq []int64
+	_   [42]byte
 }
 
 func (c *multi) init(size uint32) {
@@ -61,7 +61,7 @@ func (c *multi) frame(p int64) (data *unsafe.Pointer, seq *int64) {
 }
 
 // empty sync.Locker for conditionals
-type NoLock struct{}
+type nolock struct{}
 
-func (NoLock) Lock()   {}
-func (NoLock) Unlock() {}
+func (nolock) Lock()   {}
+func (nolock) Unlock() {}

@@ -1,46 +1,87 @@
 package onering
 
-type Queue interface {
+type Consumer interface {
 	Get(interface{}) bool
+	Consume(interface{})
+}
+
+type Producer interface {
 	Put(interface{})
-	ReadTicket() Ticket
-	WriteTicket() Ticket
+	Close()
 }
+
+type Queue interface {
+	Producer
+	Consumer
+}
+
 type New struct {
-	Size uint32
+	Size     uint32
+	MaxBatch int32
 }
 
-func (n New) SPSC() (spsc *SPSC) {
-	spsc = new(SPSC)
+func (n New) SPSC() Queue {
+	var spsc = new(SPSC)
 	spsc.init(n.Size)
-	return
+	spsc.maxbatch = n.BatchSize()
+	return spsc
 }
 
-func (n New) MPSC() (mpsc *MPSC) {
-	mpsc = new(MPSC)
+func (n New) MPSC() Queue {
+	var mpsc = new(MPSC)
 	mpsc.init(n.Size)
-	return
+	mpsc.maxbatch = n.BatchSize()
+	return mpsc
 }
 
-func (n New) SPMC() (spmc *SPMC) {
-	spmc = new(SPMC)
+func (n New) SPMC() Queue {
+	var spmc = new(SPMC)
 	spmc.init(n.Size)
-	return
+	return spmc
 }
 
-func (n New) MPMC() (mpmc *MPMC) {
-	mpmc = new(MPMC)
+func (n New) MPMC() Queue {
+	var mpmc = new(MPMC)
 	mpmc.init(n.Size)
-	return
+	return mpmc
 }
 
-type Waiter interface {
-	Wait()
-	Signal()
-	Broadcast()
+func (n *New) BatchSize() int64 {
+	if n.MaxBatch > 0 {
+		return int64(n.MaxBatch)
+	}
+	return DefaultMaxBatch
 }
 
-type Ticket interface {
-	Try(interface{}) bool
-	Use(interface{}) bool
+//type Waiter interface {
+//	Wait()
+//	Signal()
+//	Broadcast()
+//}
+//
+//type Ticket interface {
+//	Try(interface{}) bool
+//	Use(interface{}) bool
+//}
+
+type Iter interface {
+	Stop()
+	Count() int
+}
+
+type iter struct {
+	count int
+	stop  bool
+}
+
+func (i *iter) Stop() {
+	i.stop = true
+}
+
+func (i *iter) Count() int {
+	return i.count
+}
+
+func (i *iter) inc() {
+	i.count++
 }

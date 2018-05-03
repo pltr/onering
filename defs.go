@@ -1,4 +1,4 @@
 package onering
 
-const MaxBatch = 255
-
+// default max batch size for batched consumers
+const DefaultMaxBatch = 255

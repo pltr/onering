@@ -5,7 +5,7 @@ These queues don't use CAS operations to make them suitable for low latency/real
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64bit of random numbers for each.
 
 A couple of things in it were inspired by the very cool LMAX Disruptor, so thanks @mjpt777!
-It's not anywhere near as intrusive and opinionated as Disruptor though. It's not a framework and its main goal is to be (very) simple.
+It's not anywhere near as intrusive and opinionated as the Disruptor though. It's not a framework and its main goal is to be (very) simple.
 
 ## Description
 
@@ -25,7 +25,8 @@ At the moment, all queues only support sending pointers (of any type). You can s
     var queeue = onering.New{Size: N}.QueueType()
     queue.Put(*T)
     queue.Get(**T)
-    queue.Consume(fn(*T))
+    queue.Consume(fn(onering.Iter, *T))
+    queue.Close()
 
 ### Simplest case
 ```go
@@ -48,18 +49,29 @@ Batching consumption is strongly recommended in all single consumer cases, it's 
 
 ```go
     import "github.com/pltr/onering"
-    var queue = onering.New{Size: 8192}.SPSC()
+	var queue = onering.New{Size: 8192}.SPSC()
 
-    var src = int64(5)
-    queue.Put(&src)
-    queue.Close()
+	var src = int64(5)
+	queue.Put(&src)
+	queue.Put(6) // WARNING: this will allocate memory on the heap and copy the value into it
+	queue.Close()
 
-    queue.Consume(func(dst *int64) {
-       if *dst != src {
-            panic("i don't know what's going on")
-       }
-    })
+	queue.Consume(func(it onering.Iter, dst *int64) {
+		if *dst != src {
+			panic("i don't know what's going on")
+		}
+		it.Stop()
+	})
+	// still one element left in the queue
+	var dst *int64
+	// Get will always expect a pointer to a pointer
+	if !queue.Get(&dst) || *dst != 6 {
+		panic("uh oh")
+	}
+	fmt.Println("Yay, batching works")
 ```
+You can run both examples by `go run cmd/examples.go`
+
 
 ### Warnings
 Currently this is highly experimental, so be careful. It also uses some dirty tricks to get around go's typesystem.
@@ -68,7 +80,7 @@ If you have a type mismatch between your sender and receiver or try to receive s
 ### FAQ
 
 * **Why four different implementations instead of just one (MPMC)?**
-    _There are optimizations to be made in each case. They can have tremendous effect on performance._
+    _There are optimizations to be made in each case. They can have significant effect on performance._
 
 * **Which one should I use?**
     _If you're not sure, MPMC will likely to be the safest choice._

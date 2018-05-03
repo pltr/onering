@@ -4,20 +4,17 @@ import (
 	"sync/atomic"
 )
 
-// WARNING: this will ONLY work in SPSC situations
-
 type SPSC struct {
 	ring
-	_ [24]byte
+	_ [8]byte
 }
 
 func (r *SPSC) Get(i interface{}) bool {
 	var rp = r.rp
-	for rp >= atomic.LoadInt64(&r.wp) {
+	for ; rp >= atomic.LoadInt64(&r.wp); r.wait() {
 		if r.Done() {
 			return false
 		}
-		r.wait()
 	}
 	inject(i, r.data[rp&r.mask])
 	atomic.StoreInt64(&r.rp, rp+1)
@@ -25,8 +22,12 @@ func (r *SPSC) Get(i interface{}) bool {
 }
 
 func (r *SPSC) Consume(i interface{}) {
-	var fn = extractfn(i)
-	for {
+	var (
+		fn       = extractfn(i)
+		maxbatch = int(r.maxbatch)
+		it       iter
+	)
+	for keep := true; keep; {
 		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
 		for ; rp >= wp; r.wait() {
 			if r.Done() {
@@ -34,13 +35,15 @@ func (r *SPSC) Consume(i interface{}) {
 			}
 			wp = atomic.LoadInt64(&r.wp)
 		}
-		for i := 0; rp < wp; rp++ {
-			if i++; i&MaxBatch == 0 {
+		for i := 0; rp < wp && keep; it.inc() {
+			if i++; i&maxbatch == 0 {
 				atomic.StoreInt64(&r.rp, rp)
 			}
-			fn(r.data[rp&r.mask])
+			fn(&it, r.data[rp&r.mask])
+			rp++
+			keep = !it.stop
 		}
-		atomic.StoreInt64(&r.rp, wp)
+		atomic.StoreInt64(&r.rp, rp)
 	}
 }
 
@@ -52,12 +55,3 @@ func (r *SPSC) Put(i interface{}) {
 	r.data[wp&r.mask] = extractptr(i)
 	atomic.StoreInt64(&r.wp, wp+1)
 }
-
-
-type spscbatch struct {
-	ring *SPSC
-	offset int
-	rp int64
-	wp int64
-}
-
