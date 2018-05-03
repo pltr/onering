@@ -18,15 +18,18 @@ func mknumslice(n int) []int {
 }
 
 func BenchmarkRingSPSC_Get(b *testing.B) {
-	var numbers = mknumslice(b.N)
 	var ring = New{8192}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
+	type T struct {
+		i int
+	}
+	var v = T{5}
 	b.ResetTimer()
 	go func(n int) {
 		runtime.LockOSThread()
-		for i := range numbers {
-			ring.Put(&numbers[i])
+		for i := 0; i < b.N; i++ {
+			ring.Put(&v)
 		}
 		ring.Close()
 		wg.Done()
@@ -34,11 +37,9 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 
 	go func(n int) {
 		runtime.LockOSThread()
-		var v *int
+		var v *T
 		for i := 0; ring.Get(&v); i++ {
-			if *v != i {
-				b.Fatalf("uh oh")
-			}
+			_ = *v
 		}
 		wg.Done()
 	}(b.N)
