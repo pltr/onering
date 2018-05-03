@@ -87,6 +87,7 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 Rings:
 
     BenchmarkRingSPSC_Get-8           	100000000	        56.5 ns/op
+    BenchmarkRingSPSC_GetNolock-8   	100000000	        20.6 ns/op
     BenchmarkRingSPSC_Batch-8         	300000000	        12.7 ns/op
     BenchmarkRingSPMC-8               	100000000	        39.3 ns/op
     BenchmarkRingMPSC_Get-8           	100000000	        57.2 ns/op
