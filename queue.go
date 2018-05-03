@@ -1,16 +1,20 @@
 package onering
 
 // Consumer represents consuming queue
-// Get(**T) expects a pointer to a pointer and returns a boolean value informing if the read was successful
-// Consume(func(onering.Iter, *T)) expects a function with 2 arguments, onering.Iter and *T
+
+//  Get(**T) expects a pointer to a pointer and returns a boolean value informing if the read was successful
+
+//  Consume(func(onering.Iter, *T)) expects a function with 2 arguments, onering.Iter and *T
 type Consumer interface {
 	Get(interface{}) bool
 	Consume(interface{})
 }
 
 // Producer represents producing queue
-// Put(T) will accept anything, but it's strongly recommended to only call it with pointers to avoid heap allocation
-// Close() closes the queue
+
+//  Put(T) will accept anything, but it's strongly recommended to only call it with pointers to avoid heap allocation
+
+//  Close() closes the queue
 type Producer interface {
 	Put(interface{})
 	Close()
@@ -23,6 +27,7 @@ type Queue interface {
 }
 
 // Iter is a generic loop interface
+
 // Can stop consumption and keeps track of the number of messages received
 type Iter interface {
 	Stop()
@@ -60,8 +65,8 @@ func (n New) SPMC() Queue {
 	return spmc
 }
 
-// MPMC constructs a Multi-Producer/Multi-Consumer queue
-// This is the default and the most versatile/safest queue
+// MPMC constructs a Multi-Producer/Multi-Consumer queue.
+// This is the default and the most versatile/safest queue.
 // However it will not implement many of the optimizations available to other queue types
 func (n New) MPMC() Queue {
 	var mpmc = new(MPMC)
