@@ -6,19 +6,20 @@ import (
 
 type SPSC struct {
 	ring
+	_ [4]byte
 }
 
 func (r *SPSC) Get(i interface{}) bool {
-	var rp = r.rc
-	for wp := atomic.LoadInt64(&r.wp); rp >= wp; r.wait() {
-		if r.rp < rp {
-			atomic.StoreInt64(&r.rp, rp)
-		} else if atomic.LoadInt32(&r.done) > 0 {
+	var rc = r.rc
+	for wp := atomic.LoadInt64(&r.wp); rc >= wp; r.wait() {
+		wp = atomic.LoadInt64(&r.wc)
+		if r.rp < rc {
+			atomic.StoreInt64(&r.rp, rc)
+		} else if atomic.LoadInt32(&r.done) > 0 && rc >= wp {
 			return false
 		}
-		wp = atomic.LoadInt64(&r.wc) // in case the writer is idle, start reading its cache
 	}
-	inject(i, r.data[rp&r.mask])
+	inject(i, r.data[rc&r.mask])
 	r.rc++
 	if r.rc-r.rp > r.maxbatch {
 		atomic.StoreInt64(&r.rp, r.rc)
@@ -69,10 +70,8 @@ func (r *SPSC) Put(i interface{}) {
 		r.wait()
 	}
 	r.data[wc&r.mask] = extractptr(i)
+	atomic.StoreInt64(&r.wc, wc+1)
 	if wc-wp > r.maxbatch {
-		r.wc++
-		atomic.StoreInt64(&r.wp, r.wc)
-	} else {
-		atomic.StoreInt64(&r.wc, wp+1)
+		atomic.StoreInt64(&r.wp, wc+1)
 	}
 }

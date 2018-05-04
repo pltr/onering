@@ -105,52 +105,49 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_Get-8             	300000000	        12.1 ns/op
-    BenchmarkRingSPSC_GetNolock-8       	500000000	        10.8 ns/op
-    BenchmarkRingSPSC_Consume-8         	300000000	        12.3 ns/op
-    BenchmarkRingSPMC_LockThread-8      	100000000	        42.6 ns/op
-    BenchmarkRingSPMC_NoLock1CPU-8      	200000000	        24.9 ns/op
-    BenchmarkRingSPMC_Consume-8         	100000000	        43.6 ns/op
-    BenchmarkRingMPSC_GetLocked-8       	100000000	        30.2 ns/op
-    BenchmarkRingMPSC_GetNoLock1CPU-8   	200000000	        20.9 ns/op
-    BenchmarkRingMPSC_Consume-8         	100000000	        30.1 ns/op
-    BenchmarkRingMPMC_GetMany-8         	100000000	        46.0 ns/op
-    BenchmarkRingMPMC_Consume-8         	100000000	        46.6 ns/op
-    BenchmarkRingMPMC_Get1CPU-8         	100000000	        30.6 ns/op
-
+    BenchmarkRingSPSC_GetPinned-8      	300000000	        12.9 ns/op
+    BenchmarkRingSPSC_GetNoPin-8       	300000000	        15.8 ns/op
+    BenchmarkRingSPSC_Consume-8        	300000000	        12.5 ns/op
+    BenchmarkRingMPSC_GetPinned-8      	100000000	        30.2 ns/op
+    BenchmarkRingMPSC_GetNoPin1CPU-8   	200000000	        21.1 ns/op
+    BenchmarkRingMPSC_Consume-8        	200000000	        28.2 ns/op
+    BenchmarkRingSPMC_Pinned-8         	100000000	        43.0 ns/op
+    BenchmarkRingSPMC_NoPin1CPU-8      	200000000	        24.9 ns/op
+    BenchmarkRingSPMC_Consume-8        	100000000	        44.0 ns/op
+    BenchmarkRingMPMC/100P100C-8       	100000000	        46.0 ns/op
+    BenchmarkRingMPMC/4P4C_Pinned-8    	100000000	        43.5 ns/op
+    BenchmarkRingMPMC/4P4C_1CPU-8      	100000000	        37.9 ns/op
 
 
 Go channels:
 
-    BenchmarkChanMPMC-8                 	50000000	        83.3 ns/op
-    BenchmarkChan/SPSC-8                	100000000	        54.8 ns/op
-    BenchmarkChan/SPSC_NoLock1CPU-8     	100000000	        45.6 ns/op
-    BenchmarkChan/SPMC_Locked-8         	10000000	       356 ns/op
-    BenchmarkChan/SPSC_NoLock-8         	100000000	        46.2 ns/op
-    BenchmarkChan/SPMC-8                	10000000	       340 ns/op
-    BenchmarkChan/SPMC_NoLock-8         	100000000	        46.3 ns/op
-
-"NoLock" tests are tests without pinning goroutines via `runtime.LockOSThread()` - has nothing to do with mutexes or some such.
+    BenchmarkChanMPMC_100P100C-8       	50000000	        83.9 ns/op
+    BenchmarkChan/SPSC_Pinned-8        	100000000	        54.9 ns/op
+    BenchmarkChan/SPSC_1CPU-8          	100000000	        45.8 ns/op
+    BenchmarkChan/SPMC_Pinned100C-8    	20000000	       352 ns/op
+    BenchmarkChan/SPSC_1CPU#01-8       	100000000	        46.9 ns/op
+    BenchmarkChan/SPMC_Pinned100C#01-8 	10000000	       452 ns/op
+    BenchmarkChan/SPMC_1CPU-8          	100000000	        46.3 ns/op
 
 You can generally expect a 2-10x increase in performance, especially if you use a multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
-### OLD DATA (It's much faster now)
-Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution:
+Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution (run with `-tags histogram`):
 
     BenchmarkResponseTimesRing-8
-
-    [Sample size: 2048 messages] 50: 18ns	75: 19ns	90: 22ns	99: 22ns	99.9: 22ns	99.99: 22ns	99.999: 22ns	99.9999: 22ns
-    [Sample size: 2048 messages] 50: 17ns	75: 19ns	90: 21ns	99: 25ns	99.9: 33ns	99.99: 33ns	99.999: 33ns	99.9999: 33ns
-    [Sample size: 2048 messages] 50: 15ns	75: 17ns	90: 18ns	99: 34ns	99.9: 46ns	99.99: 54ns	99.999: 77ns	99.9999: 77ns
+    [Sample size: 4096 messages] 50: 25ns	75: 25ns	90: 25ns	99: 25ns	99.9: 25ns	99.99: 25ns	99.999: 25ns	99.9999: 25ns
+    [Sample size: 4096 messages] 50: 13ns	75: 13ns	90: 21ns	99: 31ns	99.9: 31ns	99.99: 31ns	99.999: 31ns	99.9999: 31ns
+    [Sample size: 4096 messages] 50: 13ns	75: 14ns	90: 14ns	99: 28ns	99.9: 36ns	99.99: 39ns	99.999: 40ns	99.9999: 40ns
+    [Sample size: 4096 messages] 50: 13ns	75: 14ns	90: 14ns	99: 28ns	99.9: 37ns	99.99: 43ns	99.999: 50ns	99.9999: 55ns
 
     BenchmarkResponseTimesChannel-8
-    [Sample size: 2048 messages] 50: 169ns	75: 170ns	90: 170ns	99: 170ns	99.9: 170ns	99.99: 170ns	99.999: 170ns	99.9999: 170ns
-    [Sample size: 2048 messages] 50: 157ns	75: 205ns	90: 251ns	99: 352ns	99.9: 421ns	99.99: 421ns	99.999: 421ns	99.9999: 421ns
-    [Sample size: 2048 messages] 50: 163ns	75: 222ns	90: 266ns	99: 317ns	99.9: 393ns	99.99: 448ns	99.999: 459ns	99.9999: 459ns
+    [Sample size: 4096 messages] 50: 86ns	75: 104ns	90: 104ns	99: 104ns	99.9: 104ns	99.99: 104ns	99.999: 104ns	99.9999: 104ns
+    [Sample size: 4096 messages] 50: 92ns	75: 119ns	90: 144ns	99: 222ns	99.9: 244ns	99.99: 244ns	99.999: 244ns	99.9999: 244ns
+    [Sample size: 4096 messages] 50: 101ns	75: 130ns	90: 154ns	99: 179ns	99.9: 216ns	99.99: 255ns	99.999: 276ns	99.9999: 276ns
 
 This is WIP, so the API is unstable at the moment - there are no guarantees about anything
 
+### OLD DATA (It's much faster now)
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
 SPSC Get (bounded by time.Now() call)
 ![chart](https://camo.githubusercontent.com/553d9f8936ed5f298e1b3c0de1724d71b5c57cea/68747470733a2f2f692e696d6775722e636f6d2f78547a397645432e706e67

@@ -9,18 +9,18 @@ import (
 
 type ring struct {
 	_        [8]int64
+	wc       int64 // writer cache
+	_        [7]int64
 	wp       int64
 	_        [7]int64
-	wc       int64
-	_        [7]int64
-	rc       int64
+	rc       int64 // reader cache
 	_        [7]int64
 	rp       int64
 	_        [7]int64
 	data     []unsafe.Pointer
 	mask     int64
-	maxbatch int64
 	size     int64
+	maxbatch int64
 	done     int32
 }
 

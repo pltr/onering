@@ -1,3 +1,5 @@
+//+build !histogram
+
 package onering
 
 import (
@@ -18,7 +20,7 @@ func mknumslice(n int) []int {
 	return s
 }
 
-func BenchmarkRingSPSC_Get(b *testing.B) {
+func BenchmarkRingSPSC_GetPinned(b *testing.B) {
 	var ring = New{Size: 8192}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -49,7 +51,7 @@ func BenchmarkRingSPSC_Get(b *testing.B) {
 
 }
 
-func BenchmarkRingSPSC_GetNolock(b *testing.B) {
+func BenchmarkRingSPSC_GetNoPin(b *testing.B) {
 	var ring = New{Size: 8192}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -111,87 +113,7 @@ func BenchmarkRingSPSC_Consume(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingSPMC_LockThread(b *testing.B) {
-	var numbers = mknumslice(b.N)
-	var ring = New{Size: 8192}.SPMC()
-	var wg sync.WaitGroup
-	var readers = MULTI
-	wg.Add(readers + 1)
-	//pp := runtime.GOMAXPROCS(8)
-	for c := 0; c < readers; c++ {
-		go func(c int) {
-			var v *int64
-			for ring.Get(&v) {
-				_ = *v
-			}
-			wg.Done()
-		}(c)
-	}
-	go func(n int) {
-		runtime.LockOSThread()
-		for i := range numbers {
-			ring.Put(&numbers[i])
-		}
-		ring.Close()
-		wg.Done()
-	}(b.N)
-	wg.Wait()
-	//runtime.GOMAXPROCS(pp)
-}
-
-func BenchmarkRingSPMC_NoLock1CPU(b *testing.B) {
-	var numbers = mknumslice(b.N)
-	var ring = New{Size: 8192}.SPMC()
-	var wg sync.WaitGroup
-	var readers = MULTI
-	wg.Add(readers + 1)
-	pp := runtime.GOMAXPROCS(1)
-	for c := 0; c < readers; c++ {
-		go func(c int) {
-			var v *int64
-			for ring.Get(&v) {
-				_ = *v
-			}
-			wg.Done()
-		}(c)
-	}
-	go func(n int) {
-		for i := range numbers {
-			ring.Put(&numbers[i])
-		}
-		ring.Close()
-		wg.Done()
-	}(b.N)
-	wg.Wait()
-	runtime.GOMAXPROCS(pp)
-}
-
-func BenchmarkRingSPMC_Consume(b *testing.B) {
-	var numbers = mknumslice(b.N)
-	var ring = New{Size: 8192}.SPMC()
-	var wg sync.WaitGroup
-	var readers = MULTI
-	wg.Add(readers + 1)
-	for c := 0; c < readers; c++ {
-		go func(c int) {
-			ring.Consume(func(it Iter, v *int) {
-				_ = *v
-			})
-			wg.Done()
-		}(c)
-	}
-	go func(n int) {
-		runtime.LockOSThread()
-		for i := range numbers {
-			ring.Put(&numbers[i])
-		}
-		ring.Close()
-		wg.Done()
-	}(b.N)
-	wg.Wait()
-}
-
-func BenchmarkRingMPSC_GetLocked(b *testing.B) {
+func BenchmarkRingMPSC_GetPinned(b *testing.B) {
 	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
@@ -223,7 +145,7 @@ func BenchmarkRingMPSC_GetLocked(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingMPSC_GetNoLock1CPU(b *testing.B) {
+func BenchmarkRingMPSC_GetNoPin1CPU(b *testing.B) {
 	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	pp := runtime.GOMAXPROCS(1)
@@ -286,113 +208,142 @@ func BenchmarkRingMPSC_Consume(b *testing.B) {
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingMPMC_GetMany(b *testing.B) {
-	var ring = New{Size: 8192}.MPMC()
+func BenchmarkRingSPMC_Pinned(b *testing.B) {
+	var numbers = mknumslice(b.N)
+	var ring = New{Size: 8192}.SPMC()
 	var wg sync.WaitGroup
+	var readers = MULTI
+	wg.Add(readers + 1)
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 50
-	wg.Add(producers * 2)
-	//var total = int32(b.N)
-	for p := 0; p < producers; p++ {
-		go func(p int) {
-			var size = b.N/producers + 1
-			var numbers = mknumslice(size)
-			for i := range numbers {
-				ring.Put(&numbers[i])
-			}
-			wg.Done()
-		}(p)
-	}
-
-	for p := 0; p < producers; p++ {
+	for c := 0; c < readers; c++ {
 		go func(c int) {
 			var v *int64
-			var total = b.N/producers + 1
-			for i := 0; ring.Get(&v); {
-				if i++; i == total {
-					break
-				}
+			for ring.Get(&v) {
+				_ = *v
 			}
 			wg.Done()
-		}(p)
+		}(c)
 	}
+	go func(n int) {
+		runtime.LockOSThread()
+		for i := range numbers {
+			ring.Put(&numbers[i])
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
 	wg.Wait()
 	//runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkRingMPMC_Consume(b *testing.B) {
-	var ring = New{Size: 8192}.MPMC()
+func BenchmarkRingSPMC_NoPin1CPU(b *testing.B) {
+	var numbers = mknumslice(b.N)
+	var ring = New{Size: 8192}.SPMC()
 	var wg sync.WaitGroup
-	//pp := runtime.GOMAXPROCS(8)
-	var producers = 50
-	wg.Add(producers * 2)
-	//var total = int32(b.N)
-	for p := 0; p < producers; p++ {
-		go func(p int) {
-			var size = b.N/producers + 1
-			var numbers = mknumslice(size)
-			for i := range numbers {
-				ring.Put(&numbers[i])
-			}
-			wg.Done()
-		}(p)
-	}
-
-	for p := 0; p < producers; p++ {
-		go func(c int) {
-			var total = b.N/producers + 1
-			var i = 0
-			ring.Consume(func(it Iter, v *int) {
-				if i++; i == total {
-					it.Stop()
-				}
-			})
-			wg.Done()
-		}(p)
-	}
-	wg.Wait()
-	//runtime.GOMAXPROCS(pp)
-}
-
-func BenchmarkRingMPMC_Get1CPU(b *testing.B) {
-	var ring = New{Size: 8192}.MPMC()
-	var wg sync.WaitGroup
+	var readers = MULTI
+	wg.Add(readers + 1)
 	pp := runtime.GOMAXPROCS(1)
-	var producers = 50
-	wg.Add(producers * 2)
-	//var total = int32(b.N)
-	for p := 0; p < producers; p++ {
-		go func(p int) {
-			var size = b.N/producers + 1
-			var numbers = mknumslice(size)
-			for i := range numbers {
-				ring.Put(&numbers[i])
-			}
-			wg.Done()
-		}(p)
-	}
-
-	for p := 0; p < producers; p++ {
+	for c := 0; c < readers; c++ {
 		go func(c int) {
 			var v *int64
-			var total = b.N/producers + 1
-			for i := 0; ring.Get(&v); {
-				if i++; i == total {
-					break
-				}
+			for ring.Get(&v) {
+				_ = *v
 			}
 			wg.Done()
-		}(p)
+		}(c)
 	}
+	go func(n int) {
+		for i := range numbers {
+			ring.Put(&numbers[i])
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
 	wg.Wait()
 	runtime.GOMAXPROCS(pp)
 }
 
-func BenchmarkChanMPMC(b *testing.B) {
+func BenchmarkRingSPMC_Consume(b *testing.B) {
+	var numbers = mknumslice(b.N)
+	var ring = New{Size: 8192}.SPMC()
+	var wg sync.WaitGroup
+	var readers = MULTI
+	wg.Add(readers + 1)
+	for c := 0; c < readers; c++ {
+		go func(c int) {
+			ring.Consume(func(it Iter, v *int) {
+				_ = *v
+			})
+			wg.Done()
+		}(c)
+	}
+	go func(n int) {
+		runtime.LockOSThread()
+		for i := range numbers {
+			ring.Put(&numbers[i])
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
+	wg.Wait()
+}
+
+func benchmarkMPMC(b *testing.B, workers int, pin bool) {
+	var size = b.N/workers + 1
+	var numbers = mknumslice(size)
+	var ring = New{Size: 8192}.MPMC()
+	var wg sync.WaitGroup
+	wg.Add(workers * 2)
+	b.ResetTimer()
+	for p := 0; p < workers; p++ {
+		go func(p int) {
+			if pin {
+				runtime.LockOSThread()
+			}
+			for i := range numbers {
+				ring.Put(&numbers[i])
+			}
+			wg.Done()
+		}(p)
+	}
+
+	for p := 0; p < workers; p++ {
+		go func(c int) {
+			if pin {
+				runtime.LockOSThread()
+			}
+			var v *int64
+			var total = b.N/workers + 1
+			for i := 0; ring.Get(&v); {
+				if i++; i == total {
+					break
+				}
+			}
+			wg.Done()
+		}(p)
+	}
+	wg.Wait()
+}
+
+func BenchmarkRingMPMC(b *testing.B) {
+	b.Run("100P100C", func(b *testing.B) {
+		benchmarkMPMC(b, 100, false)
+	})
+	b.Run("4P4C_Pinned", func(b *testing.B) {
+		benchmarkMPMC(b, 4, true)
+	})
+	b.Run("4P4C_1CPU", func(b *testing.B) {
+		pp := runtime.GOMAXPROCS(1)
+		benchmarkMPMC(b, 4, true)
+		runtime.GOMAXPROCS(pp)
+	})
+}
+
+func BenchmarkChanMPMC_100P100C(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 50
+	var producers = 100
 	wg.Add(producers * 2)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
@@ -420,7 +371,7 @@ func BenchmarkChanMPMC(b *testing.B) {
 
 func BenchmarkChan(b *testing.B) {
 
-	b.Run("SPSC", func(b *testing.B) {
+	b.Run("SPSC_Pinned", func(b *testing.B) {
 		q := make(chan int64, 8192)
 
 		var wg sync.WaitGroup
@@ -446,7 +397,7 @@ func BenchmarkChan(b *testing.B) {
 		wg.Wait()
 	})
 
-	b.Run("SPSC_NoLock1CPU", func(b *testing.B) {
+	b.Run("SPSC_1CPU", func(b *testing.B) {
 		q := make(chan int64, 8192)
 
 		var wg sync.WaitGroup
@@ -473,7 +424,7 @@ func BenchmarkChan(b *testing.B) {
 	})
 
 	producers := 100
-	b.Run("SPMC_Locked", func(b *testing.B) {
+	b.Run("SPMC_Pinned100C", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -498,7 +449,7 @@ func BenchmarkChan(b *testing.B) {
 		wg.Wait()
 	})
 
-	b.Run("SPSC_NoLock", func(b *testing.B) {
+	b.Run("SPSC_1CPU", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -524,7 +475,7 @@ func BenchmarkChan(b *testing.B) {
 		runtime.GOMAXPROCS(pp)
 	})
 
-	b.Run("SPMC", func(b *testing.B) {
+	b.Run("SPMC_Pinned100C", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -548,7 +499,7 @@ func BenchmarkChan(b *testing.B) {
 		}(b.N)
 		wg.Wait()
 	})
-	b.Run("SPMC_NoLock", func(b *testing.B) {
+	b.Run("SPMC_1CPU", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -575,7 +526,7 @@ func BenchmarkChan(b *testing.B) {
 	})
 }
 
-func TestRinSPSCSlow(t *testing.T) {
+func TestRingSPSCSlow(t *testing.T) {
 	const N = 1000
 	var q = New{Size: 4}.SPSC()
 	var wg sync.WaitGroup
@@ -594,7 +545,6 @@ func TestRinSPSCSlow(t *testing.T) {
 		defer wg.Done()
 		var v *int
 		for i := 0; q.Get(&v); i++ {
-			//fmt.Println(*v)
 			if i != *v {
 				t.Fatalf("Expected %d, but got %d", i, *v)
 				panic(i)

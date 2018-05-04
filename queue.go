@@ -66,6 +66,7 @@ func (n New) MPSC() Queue {
 func (n New) SPMC() Queue {
 	var spmc = new(SPMC)
 	spmc.init(n.Size)
+	spmc.maxbatch = n.BatchSize()
 	return spmc
 }
 
@@ -75,6 +76,7 @@ func (n New) SPMC() Queue {
 func (n New) MPMC() Queue {
 	var mpmc = new(MPMC)
 	mpmc.init(n.Size)
+	mpmc.maxbatch = n.BatchSize()
 	return mpmc
 }
 
