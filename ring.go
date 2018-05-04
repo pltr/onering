@@ -11,12 +11,16 @@ type ring struct {
 	_        [8]int64
 	wp       int64
 	_        [7]int64
+	wc       int64
+	_        [7]int64
+	rc       int64
+	_        [7]int64
 	rp       int64
 	_        [7]int64
 	data     []unsafe.Pointer
-	size     int64
 	mask     int64
 	maxbatch int64
+	size     int64
 	done     int32
 }
 
@@ -30,7 +34,7 @@ func (r *ring) Close() {
 }
 
 func (r *ring) Done() bool {
-	return atomic.LoadInt32(&r.done) > 0 && atomic.LoadInt64(&r.wp) <= atomic.LoadInt64(&r.rp)
+	return atomic.LoadInt64(&r.wp) <= atomic.LoadInt64(&r.rp) && atomic.LoadInt32(&r.done) > 0
 }
 
 func (r *ring) wait() {
@@ -39,15 +43,15 @@ func (r *ring) wait() {
 
 func (r *ring) waitForEq(data *int64, val int64) (keep bool) {
 	for keep = true; keep && atomic.LoadInt64(data) != val; runtime.Gosched() {
-		keep = !r.Done()
+		keep = atomic.LoadInt64(&r.wp) > atomic.LoadInt64(&r.rp) || atomic.LoadInt32(&r.done) == 0
 	}
 	return
 }
 
 type multi struct {
 	ring
-	seq []int64
 	_   [42]byte
+	seq []int64
 }
 
 func (c *multi) init(size uint32) {
@@ -55,7 +59,9 @@ func (c *multi) init(size uint32) {
 	c.size = int64(len(c.data))
 	c.seq = make([]int64, len(c.data))
 	c.wp = 1 // just to avoid 0-awkwardness with seq
+	c.wc = c.wp
 	c.rp = 1
+	c.rc = c.rp
 }
 
 func (c *multi) next(p *int64) int64 {

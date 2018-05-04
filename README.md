@@ -105,16 +105,18 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_Get-8             	100000000	        59.7 ns/op
-    BenchmarkRingSPSC_GetNolock-8       	200000000	        20.8 ns/op
-    BenchmarkRingSPSC_Consume-8         	300000000	        12.8 ns/op
-    BenchmarkRingSPMC-8                 	100000000	        41.4 ns/op
-    BenchmarkRingSPMC_NoLock1CPU-8      	200000000	        24.2 ns/op
-    BenchmarkRingMPSC_GetLocked-8       	100000000	        58.6 ns/op
-    BenchmarkRingMPSC_GetNoLock1CPU-8   	200000000	        27.2 ns/op
-    BenchmarkRingMPSC_Batch-8           	200000000	        28.9 ns/op
-    BenchmarkRingMPMC_Get-8             	100000000	        46.4 ns/op
-    BenchmarkRingMPMC_Get1CPU-8         	100000000	        30.1 ns/op
+    BenchmarkRingSPSC_Get-8             	300000000	        12.1 ns/op
+    BenchmarkRingSPSC_GetNolock-8       	500000000	        10.8 ns/op
+    BenchmarkRingSPSC_Consume-8         	300000000	        12.3 ns/op
+    BenchmarkRingSPMC_LockThread-8      	100000000	        42.6 ns/op
+    BenchmarkRingSPMC_NoLock1CPU-8      	200000000	        24.9 ns/op
+    BenchmarkRingSPMC_Consume-8         	100000000	        43.6 ns/op
+    BenchmarkRingMPSC_GetLocked-8       	100000000	        30.2 ns/op
+    BenchmarkRingMPSC_GetNoLock1CPU-8   	200000000	        20.9 ns/op
+    BenchmarkRingMPSC_Consume-8         	100000000	        30.1 ns/op
+    BenchmarkRingMPMC_GetMany-8         	100000000	        46.0 ns/op
+    BenchmarkRingMPMC_Consume-8         	100000000	        46.6 ns/op
+    BenchmarkRingMPMC_Get1CPU-8         	100000000	        30.6 ns/op
 
 
 
@@ -130,7 +132,7 @@ Go channels:
 
 "NoLock" tests are tests without pinning goroutines via `runtime.LockOSThread()` - has nothing to do with mutexes or some such.
 
-You can generally expect a 2-10x increase in performance, especially if you take advantage of batching and/or use a heavy multicore setup.
+You can generally expect a 2-10x increase in performance, especially if you use a multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
 Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution:

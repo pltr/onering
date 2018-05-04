@@ -8,20 +8,29 @@ type MPSC struct {
 	multi
 }
 
+func (r *MPSC) init(size uint32) {
+	r.multi.init(size)
+	r.rc = 1
+}
+
 func (r *MPSC) Get(i interface{}) bool {
 	var (
-		rp        = r.rp
+		rp        = r.rc
 		data, seq = r.frame(rp)
 	)
-	for rp > atomic.LoadInt64(seq) {
-		if r.Done() {
+	for ; rp > atomic.LoadInt64(seq); r.wait() {
+		if rp > r.rp {
+			atomic.StoreInt64(&r.rp, rp)
+		} else if r.Done() {
 			return false
 		}
-		r.wait()
 	}
 	inject(i, *data)
 	*seq = -rp
-	atomic.StoreInt64(&r.rp, rp+1)
+	r.rc = rp + 1
+	if r.rc-r.rp > r.maxbatch {
+		atomic.StoreInt64(&r.rp, r.rc)
+	}
 	return true
 }
 
@@ -32,9 +41,11 @@ func (r *MPSC) Consume(i interface{}) {
 		it       iter
 	)
 	for keep := true; keep; {
-		var rp, wp = r.rp, atomic.LoadInt64(&r.wp)
+		var rp, wp = r.rc, atomic.LoadInt64(&r.wp)
 		for ; rp >= wp; r.wait() {
-			if r.Done() {
+			if rp > r.rp {
+				atomic.StoreInt64(&r.rp, r.rc)
+			} else if r.Done() {
 				return
 			}
 			wp = atomic.LoadInt64(&r.wp)
@@ -43,6 +54,7 @@ func (r *MPSC) Consume(i interface{}) {
 		for i := 0; rp < wp && keep; it.inc() {
 			var data, seq = r.frame(rp)
 			if i++; atomic.LoadInt64(seq) <= 0 || i&maxbatch == 0 {
+				r.rc = rp
 				atomic.StoreInt64(&r.rp, rp)
 				for atomic.LoadInt64(seq) <= 0 {
 					r.wait()
@@ -53,7 +65,8 @@ func (r *MPSC) Consume(i interface{}) {
 			keep = !it.stop
 			rp++
 		}
-		atomic.StoreInt64(&r.rp, rp)
+		r.rc = rp
+		atomic.StoreInt64(&r.rp, r.rc)
 	}
 }
 

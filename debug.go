@@ -46,7 +46,7 @@ func checkGetType(i interface{}, path string) {
 		os.Exit(1)
 	}
 	t2 := t1.Elem()
-	if t2.Kind() != reflect.Ptr {
+	if kind := t2.Kind(); kind != reflect.Ptr && kind != reflect.UnsafePointer {
 		os.Stderr.WriteString(fmt.Sprintf("ERROR: %[1]s calls queue.Get(*%[2]v) with an illegal argument type %[2]v\n", path, t1))
 		os.Exit(1)
 	}

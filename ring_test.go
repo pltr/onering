@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"time"
 )
 
 const MULTI = 100
@@ -165,6 +166,31 @@ func BenchmarkRingSPMC_NoLock1CPU(b *testing.B) {
 	runtime.GOMAXPROCS(pp)
 }
 
+func BenchmarkRingSPMC_Consume(b *testing.B) {
+	var numbers = mknumslice(b.N)
+	var ring = New{Size: 8192}.SPMC()
+	var wg sync.WaitGroup
+	var readers = MULTI
+	wg.Add(readers + 1)
+	for c := 0; c < readers; c++ {
+		go func(c int) {
+			ring.Consume(func(it Iter, v *int) {
+				_ = *v
+			})
+			wg.Done()
+		}(c)
+	}
+	go func(n int) {
+		runtime.LockOSThread()
+		for i := range numbers {
+			ring.Put(&numbers[i])
+		}
+		ring.Close()
+		wg.Done()
+	}(b.N)
+	wg.Wait()
+}
+
 func BenchmarkRingMPSC_GetLocked(b *testing.B) {
 	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
@@ -229,7 +255,7 @@ func BenchmarkRingMPSC_GetNoLock1CPU(b *testing.B) {
 }
 
 //
-func BenchmarkRingMPSC_Batch(b *testing.B) {
+func BenchmarkRingMPSC_Consume(b *testing.B) {
 	var ring = New{Size: 8192}.MPSC()
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
@@ -547,6 +573,36 @@ func BenchmarkChan(b *testing.B) {
 		wg.Wait()
 		runtime.GOMAXPROCS(pp)
 	})
+}
+
+func TestRinSPSCSlow(t *testing.T) {
+	const N = 1000
+	var q = New{Size: 4}.SPSC()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	t1 := time.Now()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < N; i++ {
+			//fmt.Println("sending", i)
+			q.Put(int64(i))
+			time.Sleep(1 * time.Microsecond)
+		}
+		q.Close()
+	}()
+	go func() {
+		defer wg.Done()
+		var v *int
+		for i := 0; q.Get(&v); i++ {
+			//fmt.Println(*v)
+			if i != *v {
+				t.Fatalf("Expected %d, but got %d", i, *v)
+				panic(i)
+			}
+		}
+	}()
+	wg.Wait()
+	t.Log(time.Since(t1))
 }
 
 //// courtesy or Egon Elbre

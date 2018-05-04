@@ -1,7 +1,9 @@
 package onering
 
 import (
+	"runtime"
 	"sync/atomic"
+	"unsafe"
 )
 
 // my precious
@@ -25,8 +27,10 @@ func (r *MPMC) Get(i interface{}) bool {
 		data, seq = r.frame(rp)
 	)
 
-	if !r.waitForEq(seq, rp) {
-		return false
+	for ; atomic.LoadInt64(seq) != rp; runtime.Gosched() {
+		if atomic.LoadInt32(&r.done) > 0 && atomic.LoadInt64(&r.wp) <= rp {
+			return false
+		}
 	}
 
 	inject(i, *data)
@@ -36,21 +40,12 @@ func (r *MPMC) Get(i interface{}) bool {
 
 func (r *MPMC) Consume(i interface{}) {
 	var (
-		fn = extractfn(i)
-		it iter
+		fn  = extractfn(i)
+		it  iter
+		ptr unsafe.Pointer
 	)
-	for !it.stop {
-		var (
-			rp        = r.next(&r.rp)
-			data, seq = r.frame(rp)
-		)
-
-		if !r.waitForEq(seq, rp) {
-			break
-		}
-
-		fn(&it, *data)
-		atomic.StoreInt64(seq, -rp)
+	for !it.stop && r.Get(&ptr) {
+		fn(&it, ptr)
 	}
 }
 
@@ -60,7 +55,7 @@ func (r *MPMC) Put(i interface{}) {
 		data, seq = r.frame(wp)
 	)
 	for pread := r.size - wp; atomic.LoadInt64(seq) != pread; {
-		r.wait()
+		runtime.Gosched()
 	}
 
 	*data = extractptr(i)
