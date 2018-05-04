@@ -147,10 +147,5 @@ Here's some (however flawed - it's hard to measure it precisely, so had to sampl
 
 This is WIP, so the API is unstable at the moment - there are no guarantees about anything
 
-### OLD DATA (It's much faster now)
 Also: https://github.com/kellabyte/go-benchmarks/tree/master/queues
-SPSC Get (bounded by time.Now() call)
-![chart](https://camo.githubusercontent.com/553d9f8936ed5f298e1b3c0de1724d71b5c57cea/68747470733a2f2f692e696d6775722e636f6d2f78547a397645432e706e67
- "Queue Benchmark")
-
 Special thanks to @kellabyte and @egonelbre
