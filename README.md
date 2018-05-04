@@ -17,7 +17,8 @@ The package contains 4 related but different implementations
 
 
 At the moment, all queues only support sending pointers (of any type). You can send non pointer types, but it will cause heap allocation. But you *can not* receive anything but pointers, don't even try, it will blow up.
-
+If you build it with `-tags debug`, then all functions will be instrumented to check types at runtime.
+There are 2 tests in the package that intentionally use value types to demonstrate it.
 
 ## How to use it
 
@@ -76,6 +77,7 @@ You can run both examples by `go run cmd/examples.go`
 ### Warnings
 Currently this is highly experimental, so be careful. It also uses some dirty tricks to get around go's typesystem.
 If you have a type mismatch between your sender and receiver or try to receive something unexpected, it will likely blow up.
+Build it with `-tags debug` to ensure it's not the case.
 
 ### FAQ
 

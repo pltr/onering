@@ -1,3 +1,5 @@
+//+build debug
+
 package main
 
 import "github.com/pltr/onering"

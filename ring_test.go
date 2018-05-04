@@ -688,7 +688,7 @@ func TestRingMPSC_Get(t *testing.T) {
 	for p := 0; p < producers; p++ {
 		go func(p int) {
 			for i := range numbers {
-				ring.Put(i)
+				ring.Put(&numbers[i])
 			}
 			wg.Done()
 		}(p)
