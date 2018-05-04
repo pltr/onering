@@ -280,7 +280,7 @@ func BenchmarkRingMPMC_GetMany(b *testing.B) {
 
 	for p := 0; p < producers; p++ {
 		go func(c int) {
-			var v int64
+			var v *int64
 			var total = b.N/producers + 1
 			for i := 0; ring.Get(&v); {
 				if i++; i == total {
@@ -348,7 +348,7 @@ func BenchmarkRingMPMC_Get1CPU(b *testing.B) {
 
 	for p := 0; p < producers; p++ {
 		go func(c int) {
-			var v int64
+			var v *int64
 			var total = b.N/producers + 1
 			for i := 0; ring.Get(&v); {
 				if i++; i == total {
