@@ -94,7 +94,7 @@ Build it with `-tags debug` to ensure it's not the case.
     _Feel free to open an issue_
 
 * **How fast is it?**
-    _I haven't seen any faster, especially when it comes to latency distribution_
+    _I haven't seen any faster, especially when it comes to latency distribution (see below)_
 
 * **Did someone actually ask those questions above?**
     _No_
@@ -135,6 +135,7 @@ Go channels:
 You can generally expect a 2-10x increase in performance, especially if you use a multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
+### OLD DATA (It's much faster now)
 Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency disptribution:
 
     BenchmarkResponseTimesRing-8
