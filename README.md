@@ -100,9 +100,9 @@ Build it with `-tags debug` to ensure it's not the case.
     _No_
 
 ### Some benchmarks
+Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 `GOGC=off go test -bench=. -benchtime=3s -run=none`
-Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
@@ -134,6 +134,7 @@ You can generally expect a 2-10x increase in performance, especially if you use 
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.
 
 Here's some (however flawed - it's hard to measure it precisely, so had to sample) latency distribution (run with `-tags histogram`):
+
 `GOGC=off go test -tags histogram -bench=. -benchtime=3s -run=none`
 
     BenchmarkResponseTimesRing-8
