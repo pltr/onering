@@ -34,27 +34,27 @@ func (r *SPSC) Consume(i interface{}) {
 		it       iter
 	)
 	for keep := true; keep; {
-		var rp, wp = r.rc, atomic.LoadInt64(&r.wp)
-		for ; rp >= wp; r.wait() {
-			if rp > r.rp {
-				r.rc = rp
-				atomic.StoreInt64(&r.rp, r.rc)
-			} else if r.Done() {
+		var rc, wp = r.rc, atomic.LoadInt64(&r.wp)
+		for ; rc >= wp; r.wait() {
+			wp = atomic.LoadInt64(&r.wc)
+			if rc > r.rp {
+				r.rc = rc
+				atomic.StoreInt64(&r.rp, rc)
+			} else if atomic.LoadInt32(&r.done) > 0 && rc >= wp {
 				return
 			}
-			wp = atomic.LoadInt64(&r.wc)
 		}
-		for i := 0; rp < wp && keep; it.inc() {
+		for i := 0; rc < wp && keep; it.inc() {
 			if i++; i&maxbatch == 0 {
-				r.rc = rp
-				atomic.StoreInt64(&r.rp, r.rc)
+				r.rc = rc
+				atomic.StoreInt64(&r.rp, rc)
 			}
-			fn(&it, r.data[rp&r.mask])
-			rp++
+			fn(&it, r.data[rc&r.mask])
+			rc++
 			keep = !it.stop
 		}
-		r.rc = rp
-		atomic.StoreInt64(&r.rp, r.rc)
+		r.rc = rc
+		atomic.StoreInt64(&r.rp, rc)
 	}
 }
 
