@@ -8,11 +8,6 @@ type MPSC struct {
 	multi
 }
 
-func (r *MPSC) init(size uint32) {
-	r.multi.init(size)
-	r.rc = 1
-}
-
 func (r *MPSC) Get(i interface{}) bool {
 	var (
 		rc        = r.rc

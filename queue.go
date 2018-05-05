@@ -43,30 +43,27 @@ type New struct {
 	// Size (Capacity) of the queue
 	Size uint32
 	// Maximum number of batched messages
-	MaxBatch int32
+	BatchSize uint32
 }
 
 // SPSC constructs a Single Producer/Single Consumer queue
 func (n New) SPSC() Queue {
 	var spsc = new(SPSC)
-	spsc.init(n.Size)
-	spsc.maxbatch = n.BatchSize()
+	spsc.init(&n)
 	return spsc
 }
 
 // MPSC constructs a Multi-Producer/Single Consumer queue
 func (n New) MPSC() Queue {
 	var mpsc = new(MPSC)
-	mpsc.init(n.Size)
-	mpsc.maxbatch = n.BatchSize()
+	mpsc.init(&n)
 	return mpsc
 }
 
 // SPMC constructs a Single Producer/Multi-Consumer queue
 func (n New) SPMC() Queue {
 	var spmc = new(SPMC)
-	spmc.init(n.Size)
-	spmc.maxbatch = n.BatchSize()
+	spmc.init(&n)
 	return spmc
 }
 
@@ -75,16 +72,8 @@ func (n New) SPMC() Queue {
 // However it will not implement many of the optimizations available to other queue types
 func (n New) MPMC() Queue {
 	var mpmc = new(MPMC)
-	mpmc.init(n.Size)
-	mpmc.maxbatch = n.BatchSize()
+	mpmc.init(&n)
 	return mpmc
-}
-
-func (n *New) BatchSize() int64 {
-	if n.MaxBatch > 0 {
-		return int64(n.MaxBatch)
-	}
-	return DefaultMaxBatch
 }
 
 //type Waiter interface {

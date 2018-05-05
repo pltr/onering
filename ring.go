@@ -1,7 +1,6 @@
 package onering
 
 import (
-	"math/bits"
 	"runtime"
 	"sync/atomic"
 	"unsafe"
@@ -24,9 +23,15 @@ type ring struct {
 	done     int32
 }
 
-func (r *ring) init(size uint32) {
-	r.data = make([]unsafe.Pointer, 1<<uint(32-bits.LeadingZeros32(size-1)))
+func (r *ring) init(n *New) {
+	r.data = make([]unsafe.Pointer, roundUp2(n.Size))
 	r.mask = int64(len(r.data) - 1)
+
+	var bs = n.BatchSize
+	if bs == 0 {
+		bs = DefaultMaxBatch
+	}
+	r.maxbatch = int64(roundUp2(bs) - 1)
 }
 
 func (r *ring) Close() {
@@ -54,8 +59,8 @@ type multi struct {
 	seq []int64
 }
 
-func (c *multi) init(size uint32) {
-	c.ring.init(size)
+func (c *multi) init(n *New) {
+	c.ring.init(n)
 	c.size = int64(len(c.data))
 	c.seq = make([]int64, len(c.data))
 	c.wp = 1 // just to avoid 0-awkwardness with seq

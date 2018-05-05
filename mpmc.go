@@ -12,8 +12,8 @@ type MPMC struct {
 	multi
 }
 
-func (r *MPMC) init(size uint32) {
-	r.multi.init(size)
+func (r *MPMC) init(n *New) {
+	r.multi.init(n)
 	for i := range r.seq {
 		r.seq[i] = -int64(i)
 	}

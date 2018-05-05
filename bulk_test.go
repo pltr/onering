@@ -20,7 +20,7 @@ const (
 )
 
 func BenchmarkResponseTimesRing(b *testing.B) {
-	var ring = New{Size: 8192, MaxBatch: 127}.SPSC()
+	var ring = New{Size: 8192, BatchSize: 127}.SPSC()
 	var wg sync.WaitGroup
 	wg.Add(2)
 	var diffs = make([]int64, (b.N/sampleTimes)+1)
