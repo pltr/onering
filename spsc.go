@@ -10,8 +10,8 @@ type SPSC struct {
 }
 
 func (r *SPSC) Get(i interface{}) bool {
-	rc, wp := r.rc, atomic.LoadInt64(&r.wp)
-	if rc >= wp {
+	var rc = r.rc
+	if wp := atomic.LoadInt64(&r.wp); rc >= wp {
 		if rc > r.rp {
 			atomic.StoreInt64(&r.rp, rc)
 		}
@@ -24,9 +24,10 @@ func (r *SPSC) Get(i interface{}) bool {
 	}
 
 	inject(i, r.data[rc&r.mask])
-	r.rc++
+	rc++
+	r.rc = rc
 	if r.rc-r.rp > r.maxbatch {
-		atomic.StoreInt64(&r.rp, r.rc)
+		atomic.StoreInt64(&r.rp, rc)
 	}
 	return true
 }
@@ -63,7 +64,9 @@ func (r *SPSC) Consume(i interface{}) {
 func (r *SPSC) Put(i interface{}) {
 	var wc = r.wc
 	if diff, rp := wc-r.mask, atomic.LoadInt64(&r.rp); diff >= rp {
-		atomic.StoreInt64(&r.wp, wc)
+		if wc > r.wp {
+			atomic.StoreInt64(&r.wp, wc)
+		}
 		for ; diff >= rp; rp = atomic.LoadInt64(&r.rp) {
 			r.wait()
 		}
