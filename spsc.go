@@ -59,19 +59,16 @@ func (r *SPSC) Consume(i interface{}) {
 }
 
 func (r *SPSC) Put(i interface{}) {
-	var (
-		wc = atomic.LoadInt64(&r.wc)
-		wp = atomic.LoadInt64(&r.wp)
-	)
+	var wc = r.wc
 	for diff := wc - r.mask; diff >= atomic.LoadInt64(&r.rp); {
-		if wc > wp {
+		if wc > r.wp {
 			atomic.StoreInt64(&r.wp, wc)
 		}
 		r.wait()
 	}
 	r.data[wc&r.mask] = extractptr(i)
-	atomic.StoreInt64(&r.wc, wc+1)
-	if wc-wp > r.maxbatch {
-		atomic.StoreInt64(&r.wp, wc+1)
+	wc = atomic.AddInt64(&r.wc, 1)
+	if wc-r.wp > r.maxbatch {
+		atomic.StoreInt64(&r.wp, wc)
 	}
 }
