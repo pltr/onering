@@ -106,29 +106,29 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_GetPinned-8      	300000000	        12.6 ns/op
-    BenchmarkRingSPSC_GetNoPin-8       	300000000	        15.7 ns/op
-    BenchmarkRingSPSC_Consume-8        	300000000	        12.4 ns/op
-    BenchmarkRingMPSC_GetPinned-8      	200000000	        28.7 ns/op
-    BenchmarkRingMPSC_GetNoPin1CPU-8   	200000000	        21.3 ns/op
-    BenchmarkRingMPSC_Consume-8        	200000000	        28.3 ns/op
-    BenchmarkRingSPMC_Pinned-8         	100000000	        43.1 ns/op
+    BenchmarkRingSPSC_GetPinned-8      	300000000	        12.5 ns/op
+    BenchmarkRingSPSC_GetNoPin-8       	300000000	        15.3 ns/op
+    BenchmarkRingSPSC_Consume-8        	300000000	        12.5 ns/op
+    BenchmarkRingMPSC_GetPinned-8      	200000000	        28.2 ns/op
+    BenchmarkRingMPSC_GetNoPin1CPU-8   	200000000	        20.5 ns/op
+    BenchmarkRingMPSC_Consume-8        	200000000	        27.9 ns/op
+    BenchmarkRingSPMC_Pinned-8         	100000000	        42.9 ns/op
     BenchmarkRingSPMC_NoPin1CPU-8      	200000000	        25.0 ns/op
-    BenchmarkRingSPMC_Consume-8        	100000000	        44.7 ns/op
-    BenchmarkRingMPMC/100P100C-8       	100000000	        46.3 ns/op
+    BenchmarkRingSPMC_Consume-8        	100000000	        44.6 ns/op
+    BenchmarkRingMPMC/100P100C-8       	100000000	        46.4 ns/op
     BenchmarkRingMPMC/4P4C_Pinned-8    	100000000	        43.5 ns/op
-    BenchmarkRingMPMC/4P4C_1CPU-8      	100000000	        37.0 ns/op
+    BenchmarkRingMPMC/4P4C_1CPU-8      	100000000	        36.7 ns/op
 
 
 Go channels:
 
-    BenchmarkChanMPMC_100P100C-8       	50000000	        83.9 ns/op
-    BenchmarkChan/SPSC_Pinned-8        	100000000	        54.9 ns/op
-    BenchmarkChan/SPSC_1CPU-8          	100000000	        45.8 ns/op
-    BenchmarkChan/SPMC_Pinned100C-8    	20000000	       352 ns/op
-    BenchmarkChan/SPSC_1CPU#01-8       	100000000	        46.9 ns/op
-    BenchmarkChan/SPMC_Pinned100C#01-8 	10000000	       452 ns/op
-    BenchmarkChan/SPMC_1CPU-8          	100000000	        46.3 ns/op
+    BenchmarkChanMPMC_Pinned4P4C-8     	50000000	        86.6 ns/op
+    BenchmarkChan/SPSC_Pinned-8        	100000000	        54.8 ns/op
+    BenchmarkChan/SPSC_1CPU-8          	100000000	        46.3 ns/op
+    BenchmarkChan/SPMC_Pinned100C-8    	10000000	       388 ns/op
+    BenchmarkChan/SPMC_1CPU-8          	100000000	        45.6 ns/op
+    BenchmarkChan/MPSC_Pinned100P-8    	10000000	       401 ns/op
+    BenchmarkChan/MPSC_1CPU-8          	100000000	        46.1 ns/op
 
 You can generally expect a 2-10x increase in performance, especially if you use a multicore setup.
 Do note that batching methods in them *do not* increase latency but, in fact, do the opposite.

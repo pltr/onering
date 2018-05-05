@@ -133,6 +133,7 @@ func BenchmarkRingMPSC_GetPinned(b *testing.B) {
 		runtime.LockOSThread()
 		var v *int
 		for ring.Get(&v) {
+			//fmt.Println(*v)
 			n--
 			if n <= 0 {
 				ring.Close()
@@ -339,14 +340,15 @@ func BenchmarkRingMPMC(b *testing.B) {
 	})
 }
 
-func BenchmarkChanMPMC_100P100C(b *testing.B) {
+func BenchmarkChanMPMC_Pinned4P4C(b *testing.B) {
 	var ch = make(chan int64, 8192)
 	var wg sync.WaitGroup
 	//pp := runtime.GOMAXPROCS(8)
-	var producers = 100
+	var producers = 4
 	wg.Add(producers * 2)
 	for p := 0; p < producers; p++ {
 		go func(p int) {
+			runtime.LockOSThread()
 			var size = b.N/producers + 1
 			for i := 0; i < size; i++ {
 				ch <- int64(i)
@@ -357,6 +359,7 @@ func BenchmarkChanMPMC_100P100C(b *testing.B) {
 
 	for p := 0; p < producers; p++ {
 		go func(c int) {
+			runtime.LockOSThread()
 			for n := b.N/producers + 1; n > 0; n-- {
 				v := <-ch
 				_ = v
@@ -449,7 +452,7 @@ func BenchmarkChan(b *testing.B) {
 		wg.Wait()
 	})
 
-	b.Run("SPSC_1CPU", func(b *testing.B) {
+	b.Run("SPMC_1CPU", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -475,7 +478,7 @@ func BenchmarkChan(b *testing.B) {
 		runtime.GOMAXPROCS(pp)
 	})
 
-	b.Run("SPMC_Pinned100C", func(b *testing.B) {
+	b.Run("MPSC_Pinned100P", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)
@@ -499,7 +502,7 @@ func BenchmarkChan(b *testing.B) {
 		}(b.N)
 		wg.Wait()
 	})
-	b.Run("SPMC_1CPU", func(b *testing.B) {
+	b.Run("MPSC_1CPU", func(b *testing.B) {
 		single := b.N/producers + 1
 		total := single * producers
 		q := make(chan int64, 8192)

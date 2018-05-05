@@ -32,9 +32,10 @@ func (r *MPSC) Get(i interface{}) bool {
 
 	inject(i, *data)
 	*seq = -rc
-	r.rc++
+	rc++
+	r.rc = rc
 	if r.rc-r.rp > r.maxbatch {
-		atomic.StoreInt64(&r.rp, r.rc)
+		atomic.StoreInt64(&r.rp, rc)
 	}
 	return true
 }
