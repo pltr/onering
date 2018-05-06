@@ -1,11 +1,13 @@
 # One Ring to Queue Them All
 
-Well, no, it's not really just one ring, but a collection of lock-free ring buffers for different scenarios, so it's even better!
+Well, no, it's not really just one ring, but a collection of concurrent ring buffers for different scenarios, so it's even better!
 These queues don't use CAS operations to make them suitable for low latency/real-time environments and as a side effect of that,
 they preserve total order of messages. As a reward for finding flaws/bugs in this, I offer 64bit of random numbers for each.
 
 A couple of things in it were inspired by the very cool LMAX Disruptor, so thanks @mjpt777!
 It's not anywhere near as intrusive and opinionated as the Disruptor though. It's not a framework and its main goal is to be (very) simple.
+
+The MPMC design is similar to http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue, but with FAA instad of CAS.
 
 ## Description
 
@@ -88,7 +90,7 @@ Build it with `-tags debug` to ensure it's not the case.
     _There are optimizations to be made in each case. They can have significant effect on performance._
 
 * **Which one should I use?**
-    _If you're not sure, MPMC will likely to be the safest choice._
+    _If you're not sure, MPMC will likely to be the safest choice. However, MPMC queues are almost never a good design choice._
 
 * **I think I found a bug/something doesn't work as expectd**
     _Feel free to open an issue_

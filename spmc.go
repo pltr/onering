@@ -16,13 +16,13 @@ func (r *SPMC) Get(i interface{}) bool {
 		data, seq = r.frame(rp)
 	)
 
-	for ; atomic.LoadInt64(seq) != rp; runtime.Gosched() {
+	for pread := -rp; atomic.LoadInt64(seq) != pread; runtime.Gosched() {
 		if atomic.LoadInt32(&r.done) > 0 && atomic.LoadInt64(&r.wp) <= rp {
 			return false
 		}
 	}
 	inject(i, *data)
-	atomic.StoreInt64(seq, -rp)
+	atomic.StoreInt64(seq, rp+r.size)
 	return true
 }
 
@@ -42,10 +42,10 @@ func (r *SPMC) Put(i interface{}) {
 		wp        = r.wp
 		data, seq = r.frame(wp)
 	)
-	for atomic.LoadInt64(seq) > 0 {
+	for atomic.LoadInt64(seq) < 0 {
 		runtime.Gosched()
 	}
 	*data = extractptr(i)
 	r.wp++
-	atomic.StoreInt64(seq, wp)
+	atomic.StoreInt64(seq, -wp)
 }

@@ -6,7 +6,9 @@ import (
 	"unsafe"
 )
 
-// my precious
+// As it turns out, it's a Chris' Tomasson's modification of Vyukov's queue
+// https://groups.google.com/forum/#!searchin/lock-free/thomasson/lock-free/acjQ3-89abE/a6-Di0GZsyEJ
+// http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 type MPMC struct {
 	multi
@@ -15,10 +17,9 @@ type MPMC struct {
 func (r *MPMC) init(n *New) {
 	r.multi.init(n)
 	for i := range r.seq {
-		r.seq[i] = -int64(i)
+		r.seq[i] = int64(i)
 	}
-	r.wp = r.size
-	r.rp = r.size
+	r.seq[0] = r.size
 }
 
 func (r *MPMC) Get(i interface{}) bool {
@@ -27,14 +28,15 @@ func (r *MPMC) Get(i interface{}) bool {
 		data, seq = r.frame(rp)
 	)
 
-	for ; atomic.LoadInt64(seq) != rp; runtime.Gosched() {
+	for pread := -rp; atomic.LoadInt64(seq) != pread; {
 		if atomic.LoadInt32(&r.done) > 0 && atomic.LoadInt64(&r.wp) <= rp {
 			return false
 		}
+		runtime.Gosched()
 	}
 
 	inject(i, *data)
-	atomic.StoreInt64(seq, -rp)
+	atomic.StoreInt64(seq, rp+r.size)
 	return true
 }
 
@@ -54,10 +56,11 @@ func (r *MPMC) Put(i interface{}) {
 		wp        = r.next(&r.wp)
 		data, seq = r.frame(wp)
 	)
-	for pread := r.size - wp; atomic.LoadInt64(seq) != pread; {
+
+	for atomic.LoadInt64(seq) != wp {
 		runtime.Gosched()
 	}
 
 	*data = extractptr(i)
-	atomic.StoreInt64(seq, wp)
+	atomic.StoreInt64(seq, -wp)
 }

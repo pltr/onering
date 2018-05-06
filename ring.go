@@ -63,10 +63,12 @@ func (c *multi) init(n *New) {
 	c.ring.init(n)
 	c.size = int64(len(c.data))
 	c.seq = make([]int64, len(c.data))
+	for i := range c.seq {
+		c.seq[i] = int64(i)
+	}
 	c.wp = 1 // just to avoid 0-awkwardness with seq
-	c.wc = c.wp
 	c.rp = 1
-	c.rc = c.rp
+	c.wc, c.rc = c.wp, c.rp
 }
 
 func (c *multi) next(p *int64) int64 {
