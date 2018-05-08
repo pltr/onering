@@ -5,6 +5,8 @@ import (
 )
 
 type SPSC struct {
+	_ [8]int64
+	wc int64
 	ring
 	_ [4]byte
 }
@@ -40,11 +42,12 @@ func (r *SPSC) Consume(i interface{}) {
 	)
 	for keep := true; keep; {
 		var rc, wp = r.rc, atomic.LoadInt64(&r.wp)
-		for ; rc >= wp; wp = atomic.LoadInt64(&r.wc) {
+		for rc >= wp {
 			if atomic.LoadInt32(&r.done) > 0 {
 				return
 			}
 			r.wait()
+			wp = atomic.LoadInt64(&r.wc)
 		}
 
 		for i := 0; rc < wp && keep; it.inc() {

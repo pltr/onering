@@ -108,18 +108,18 @@ Macbook pro 2.9 GHz Intel Core i7 (2017)
 
 Rings:
 
-    BenchmarkRingSPSC_GetPinned-8      	300000000	        12.5 ns/op
-    BenchmarkRingSPSC_GetNoPin-8       	300000000	        15.3 ns/op
-    BenchmarkRingSPSC_Consume-8        	300000000	        12.5 ns/op
-    BenchmarkRingMPSC_GetPinned-8      	200000000	        28.2 ns/op
-    BenchmarkRingMPSC_GetNoPin1CPU-8   	200000000	        20.5 ns/op
-    BenchmarkRingMPSC_Consume-8        	200000000	        27.9 ns/op
-    BenchmarkRingSPMC_Pinned-8         	100000000	        42.9 ns/op
-    BenchmarkRingSPMC_NoPin1CPU-8      	200000000	        25.0 ns/op
-    BenchmarkRingSPMC_Consume-8        	100000000	        44.6 ns/op
-    BenchmarkRingMPMC/100P100C-8       	100000000	        46.4 ns/op
-    BenchmarkRingMPMC/4P4C_Pinned-8    	100000000	        43.5 ns/op
-    BenchmarkRingMPMC/4P4C_1CPU-8      	100000000	        36.7 ns/op
+    BenchmarkRingSPSC_GetPinned-8      	200000000	        12.5 ns/op
+    BenchmarkRingSPSC_GetNoPin-8       	200000000	        15.6 ns/op
+    BenchmarkRingSPSC_Consume-8        	200000000	        12.5 ns/op
+    BenchmarkRingMPSC_GetPinned-8      	100000000	        29.6 ns/op
+    BenchmarkRingMPSC_GetNoPin1CPU-8   	100000000	        20.5 ns/op
+    BenchmarkRingMPSC_Consume-8        	100000000	        29.4 ns/op
+    BenchmarkRingSPMC_Pinned-8         	100000000	        35.0 ns/op
+    BenchmarkRingSPMC_NoPin1CPU-8      	100000000	        24.8 ns/op
+    BenchmarkRingSPMC_Consume-8        	100000000	        32.4 ns/op
+    BenchmarkRingMPMC/100P100C-8       	100000000	        40.3 ns/op
+    BenchmarkRingMPMC/4P4C_Pinned-8    	100000000	        42.8 ns/op
+    BenchmarkRingMPMC/4P4C_1CPU-8      	100000000	        37.0 ns/op
 
 
 Go channels:

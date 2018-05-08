@@ -7,14 +7,12 @@ import (
 )
 
 type ring struct {
-	_        [8]int64
+	_        [7]int64
 	wp       int64
 	_        [7]int64
-	wc       int64 // writer cache
+	rp       int64
 	_        [7]int64
 	rc       int64 // reader cache
-	_        [7]int64
-	rp       int64
 	_        [7]int64
 	data     []unsafe.Pointer
 	mask     int64
@@ -54,8 +52,9 @@ func (r *ring) waitForEq(data *int64, val int64) (keep bool) {
 }
 
 type multi struct {
+	_ int64
 	ring
-	_   [42]byte
+	_ [42]byte
 	seq []int64
 }
 
@@ -68,7 +67,7 @@ func (c *multi) init(n *New) {
 	}
 	c.wp = 1 // just to avoid 0-awkwardness with seq
 	c.rp = 1
-	c.wc, c.rc = c.wp, c.rp
+	c.rc = c.rp
 }
 
 func (c *multi) next(p *int64) int64 {
